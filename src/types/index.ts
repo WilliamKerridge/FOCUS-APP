@@ -1,13 +1,17 @@
 export type Mode = 'work' | 'transition' | 'home'
+export type StreakType = 'kickstart' | 'transition' | 'focus' | 'promise_rate'
 
 export interface Profile {
   id: string
-  work_days: number[]
+  work_days: string[]
   transition_time: string
   gamification_level: 'subtle' | 'full'
   tone: string
   onboarding_complete: boolean
+  current_mode: Mode
+  mode_changed_at: string
   created_at: string
+  updated_at: string
 }
 
 export interface Task {
@@ -22,6 +26,7 @@ export interface Task {
   source: string | null
   completed_at: string | null
   created_at: string
+  updated_at: string
 }
 
 export interface Handoff {
@@ -30,24 +35,30 @@ export interface Handoff {
   type: 'morning_kickstart' | 'end_of_day' | 'transition'
   content: KickstartContent | EndOfDayContent | TransitionContent
   raw_input: string
+  claire_quality_time: 'yes' | 'no' | 'partial' | null
+  claire_blocker: string | null
   date: string
   created_at: string
+  updated_at: string
 }
 
 export interface KickstartContent {
   main_focus: string
-  if_time: string[]
   must_today: string[]
+  if_time: string[]
   flagged_promises: string[]
-  yesterday_thread: string
-  overcommitment_warning: string | null
+  yesterday_thread: string | null
+  overcommitted: boolean
+  overcommit_note: string | null
+  streak_note: string | null
 }
 
 export interface EndOfDayContent {
-  done: string
-  unfinished: string
-  tomorrow_start: string
-  summary: string
+  done_today: string[]
+  unfinished: string[]
+  next_start: string
+  context_note: string
+  parking_note: string | null
 }
 
 export interface TransitionContent {
@@ -58,11 +69,12 @@ export interface TransitionContent {
 export interface Streak {
   id: string
   user_id: string
-  streak_type: string
+  streak_type: StreakType
   current_streak: number
   longest_streak: number
   last_completed_date: string | null
   created_at: string
+  updated_at: string
 }
 
 export interface ClaudeMessage {

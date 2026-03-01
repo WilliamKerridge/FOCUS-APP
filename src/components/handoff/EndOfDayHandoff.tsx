@@ -6,28 +6,30 @@ import type { EndOfDayContent } from '@/types'
 
 interface Props {
   user: User
+  onSwitchToTransition?: () => void
 }
 
 const EOD_SYSTEM_PROMPT = `William is finishing work. Return ONLY valid JSON, no markdown.
 
 Shape:
 {
-  "done": "brief summary of what got done",
-  "unfinished": "what's still open",
-  "tomorrow_start": "the exact next action for tomorrow morning (specific, physical step)",
-  "summary": "one-sentence parking confirmation — direct, no fluff"
+  "done_today": ["what got completed — be specific"],
+  "unfinished": ["open loops being parked"],
+  "next_start": "the exact next physical action to start with tomorrow morning — specific, not vague",
+  "context_note": "any important context for tomorrow (one sentence or empty string)",
+  "parking_note": "flag if something has been unfinished multiple days in a row, otherwise null"
 }
 
-Be specific about tomorrow_start — not 'continue X' but 'open [thing] and do [specific step]'`
+Be direct. next_start must be specific: not "continue X" but "open [thing] and do [specific step]".`
 
-export default function EndOfDayHandoff({ user }: Props) {
-  const [done, setDone] = useState('')
+export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
+  const [doneToday, setDoneToday] = useState('')
   const [unfinished, setUnfinished] = useState('')
-  const [tomorrowStart, setTomorrowStart] = useState('')
+  const [nextStart, setNextStart] = useState('')
   const [result, setResult] = useState<EndOfDayContent | null>(null)
+  const [existingId, setExistingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [alreadyDone, setAlreadyDone] = useState(false)
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -40,18 +42,17 @@ export default function EndOfDayHandoff({ user }: Props) {
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setAlreadyDone(true)
+          setExistingId(data.id as string)
           setResult(data.content as EndOfDayContent)
         }
       })
   }, [user.id])
 
   async function handleSubmit() {
-    if (!done.trim() && !unfinished.trim()) return
     setLoading(true)
     setError(null)
 
-    const rawInput = `Done: ${done}\nUnfinished: ${unfinished}\nTomorrow start: ${tomorrowStart}`
+    const rawInput = `Done today: ${doneToday}\nUnfinished: ${unfinished}\nNext start: ${nextStart}`
 
     try {
       const rawText = await callClaude(
@@ -64,16 +65,32 @@ export default function EndOfDayHandoff({ user }: Props) {
       setResult(parsed)
 
       const today = new Date().toISOString().split('T')[0]
+
+      if (existingId) {
+        await supabase
+          .from('handoffs')
+          .update({ content: parsed, raw_input: rawInput, updated_at: new Date().toISOString() })
+          .eq('id', existingId)
+      } else {
+        await supabase.from('handoffs').insert({
+          user_id: user.id,
+          type: 'end_of_day',
+          content: parsed,
+          raw_input: rawInput,
+          date: today,
+        })
+      }
+    } catch (err) {
+      console.error('End of day error:', err)
+      setError('Could not process — Claude is unavailable. Your notes have been saved.')
+      const today = new Date().toISOString().split('T')[0]
       await supabase.from('handoffs').insert({
         user_id: user.id,
         type: 'end_of_day',
-        content: parsed,
+        content: {},
         raw_input: rawInput,
         date: today,
       })
-    } catch (err) {
-      setError('Something went wrong. Try again.')
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -82,23 +99,56 @@ export default function EndOfDayHandoff({ user }: Props) {
   if (result) {
     return (
       <div className="space-y-4">
-        {alreadyDone && (
-          <p className="text-xs text-muted-foreground">Today's handoff is saved.</p>
-        )}
-        <div className="px-4 py-4 rounded-lg bg-secondary border border-border">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Parked</p>
-          <p className="text-sm leading-relaxed">{result.summary}</p>
-        </div>
-        <div className="px-4 py-3 rounded-lg bg-primary/10 border border-primary/30">
-          <p className="text-xs text-primary uppercase tracking-wider font-medium mb-1">Tomorrow starts</p>
-          <p className="text-sm font-medium">{result.tomorrow_start}</p>
-        </div>
-        {result.unfinished && (
-          <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Still open</p>
-            <p className="text-sm">{result.unfinished}</p>
+        {result.parking_note && (
+          <div className="px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm">
+            ⚠ {result.parking_note}
           </div>
         )}
+
+        <div className="px-4 py-4 rounded-lg bg-primary/10 border border-primary/30">
+          <p className="text-xs text-primary uppercase tracking-wider font-medium mb-1">Tomorrow starts</p>
+          <p className="text-sm font-medium">{result.next_start}</p>
+        </div>
+
+        {result.context_note && (
+          <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Context</p>
+            <p className="text-sm">{result.context_note}</p>
+          </div>
+        )}
+
+        {result.done_today.length > 0 && (
+          <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Done today</p>
+            <ul className="space-y-1">
+              {result.done_today.map((item, i) => (
+                <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                  <span className="shrink-0">✓</span>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Nudge toward Transition mode */}
+        {onSwitchToTransition && (
+          <div className="mt-6 space-y-2">
+            <p className="text-sm text-muted-foreground">Handoff saved. Ready to switch off?</p>
+            <button
+              onClick={onSwitchToTransition}
+              className="w-full py-3 rounded-lg bg-secondary border border-border font-medium text-sm active:scale-95 transition-transform"
+            >
+              Switch to Transition mode
+            </button>
+          </div>
+        )}
+
+        <button
+          onClick={() => { setResult(null); setDoneToday(''); setUnfinished(''); setNextStart('') }}
+          className="text-xs text-muted-foreground hover:text-foreground underline"
+        >
+          Redo handoff
+        </button>
       </div>
     )
   }
@@ -110,11 +160,11 @@ export default function EndOfDayHandoff({ user }: Props) {
       <div className="space-y-3">
         <div>
           <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium block mb-1.5">
-            What did you get done?
+            What did you get done today?
           </label>
           <textarea
-            value={done}
-            onChange={e => setDone(e.target.value)}
+            value={doneToday}
+            onChange={e => setDoneToday(e.target.value)}
             placeholder="Even partial progress counts"
             rows={3}
             className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none text-sm"
@@ -123,7 +173,7 @@ export default function EndOfDayHandoff({ user }: Props) {
 
         <div>
           <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium block mb-1.5">
-            What's unfinished?
+            What's unfinished and needs parking?
           </label>
           <textarea
             value={unfinished}
@@ -136,11 +186,11 @@ export default function EndOfDayHandoff({ user }: Props) {
 
         <div>
           <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium block mb-1.5">
-            Where should tomorrow start?
+            What's the very next action to start with tomorrow?
           </label>
           <textarea
-            value={tomorrowStart}
-            onChange={e => setTomorrowStart(e.target.value)}
+            value={nextStart}
+            onChange={e => setNextStart(e.target.value)}
             placeholder="Be specific — the exact next step"
             rows={2}
             className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none text-sm"
@@ -148,11 +198,16 @@ export default function EndOfDayHandoff({ user }: Props) {
         </div>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <div className="space-y-2">
+          <p className="text-sm text-destructive">{error}</p>
+          <button onClick={handleSubmit} className="text-sm text-primary hover:underline">Retry</button>
+        </div>
+      )}
 
       <button
         onClick={handleSubmit}
-        disabled={loading || (!done.trim() && !unfinished.trim())}
+        disabled={loading}
         className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-40 active:scale-95 transition-transform"
       >
         {loading ? 'Parking…' : 'Park it'}

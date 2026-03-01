@@ -8,9 +8,10 @@ type WorkView = 'home' | 'kickstart' | 'handoff'
 
 interface Props {
   user: User
+  onSwitchToTransition: () => void
 }
 
-export default function WorkMode({ user }: Props) {
+export default function WorkMode({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<WorkView>('home')
 
   if (view === 'kickstart') {
@@ -18,7 +19,7 @@ export default function WorkMode({ user }: Props) {
       <div className="space-y-4">
         <button
           onClick={() => setView('home')}
-          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Back
         </button>
@@ -33,12 +34,12 @@ export default function WorkMode({ user }: Props) {
       <div className="space-y-4">
         <button
           onClick={() => setView('home')}
-          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Back
         </button>
         <h2 className="text-lg font-bold">End of Day</h2>
-        <EndOfDayHandoff user={user} />
+        <EndOfDayHandoff user={user} onSwitchToTransition={onSwitchToTransition} />
       </div>
     )
   }

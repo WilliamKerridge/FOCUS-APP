@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Flame } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import type { Streak } from '@/types'
+import { useStreak } from '@/hooks/useStreak'
 import type { User } from '@supabase/supabase-js'
 
 interface Props {
@@ -9,21 +7,10 @@ interface Props {
 }
 
 export default function StreakCounter({ user }: Props) {
-  const [streak, setStreak] = useState<Streak | null>(null)
+  const streak = useStreak(user, 'kickstart')
 
-  useEffect(() => {
-    supabase
-      .from('streaks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('streak_type', 'kickstart')
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setStreak(data as Streak)
-      })
-  }, [user.id])
-
-  if (!streak || streak.current_streak === 0) return null
+  // Only show at >= 2 days (per spec)
+  if (!streak || streak.current_streak < 2) return null
 
   return (
     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

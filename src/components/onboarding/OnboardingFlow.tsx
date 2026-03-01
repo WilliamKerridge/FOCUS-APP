@@ -4,7 +4,6 @@ import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const DAY_NUMBERS = [1, 2, 3, 4, 5, 6, 7]
 
 interface Props {
   user: User
@@ -13,38 +12,41 @@ interface Props {
 
 export default function OnboardingFlow({ user, onComplete }: Props) {
   const [step, setStep] = useState(0)
-  const [workDays, setWorkDays] = useState<number[]>([1, 2, 3, 4, 5])
+  const [workDays, setWorkDays] = useState<string[]>(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
   const [transitionTime, setTransitionTime] = useState('16:00')
   const [promise, setPromise] = useState('')
   const [claudeMessage, setClaudeMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function toggleDay(day: number) {
+  function toggleDay(day: string) {
     setWorkDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b))
     )
   }
 
   async function handleDone() {
     setLoading(true)
     try {
-      // Get Claude's message for today
-      const today = new Date().toLocaleDateString('en-GB', { weekday: 'long' })
-      const time = transitionTime
-      const msg = await callClaude(
-        [{ role: 'user', content: `Today is ${today}. My transition time is ${time}. Give me one direct sentence about what ${time} today means for me.` }]
-      )
-      setClaudeMessage(msg)
+      try {
+        const today = new Date().toLocaleDateString('en-GB', { weekday: 'long' })
+        const msg = await callClaude(
+          [{ role: 'user', content: `Today is ${today}. My transition time is ${transitionTime}. Give me one direct sentence about what ${transitionTime} today means for me.` }]
+        )
+        setClaudeMessage(msg)
+      } catch {
+        // Claude unavailable — continue without message
+      }
 
-      // Save profile
       await supabase.from('profiles').upsert({
         id: user.id,
         work_days: workDays,
         transition_time: transitionTime,
         onboarding_complete: true,
+        updated_at: new Date().toISOString(),
       })
 
-      // Save first promise if provided
       if (promise.trim()) {
         await supabase.from('tasks').insert({
           user_id: user.id,
@@ -56,8 +58,8 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
 
       setStep(4)
     } catch (err) {
-      console.error(err)
-      // Still complete onboarding even if Claude fails
+      console.error('Onboarding error:', err)
+      // Complete onboarding even on error
       await supabase.from('profiles').upsert({
         id: user.id,
         work_days: workDays,
@@ -112,9 +114,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
             <p className="text-muted-foreground leading-relaxed">
               Your personal reliability engine. Captures what's on your mind. Tells you what matters now. Helps you show up.
             </p>
-            <p className="text-muted-foreground text-sm">
-              30 seconds to set up.
-            </p>
+            <p className="text-muted-foreground text-sm">30 seconds to set up.</p>
             <button
               onClick={() => setStep(1)}
               className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg active:scale-95 transition-transform"
@@ -129,17 +129,16 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold">Your working days</h2>
-              <p className="text-muted-foreground text-sm mt-1">When should FOCUS fire your 4pm transition reminder?</p>
+              <p className="text-muted-foreground text-sm mt-1">When should FOCUS fire your transition reminder?</p>
             </div>
             <div className="flex gap-2">
-              {DAYS.map((day, i) => {
-                const dayNum = DAY_NUMBERS[i]
-                const selected = workDays.includes(dayNum)
+              {DAYS.map(day => {
+                const selected = workDays.includes(day)
                 return (
                   <button
                     key={day}
-                    onClick={() => toggleDay(dayNum)}
-                    className={`flex-1 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    onClick={() => toggleDay(day)}
+                    className={`flex-1 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                       selected
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-secondary text-muted-foreground'
@@ -187,7 +186,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold">Any promises due?</h2>
-              <p className="text-muted-foreground text-sm mt-1">Something you've said you'll do — optional, skip if nothing comes to mind.</p>
+              <p className="text-muted-foreground text-sm mt-1">Something you've said you'll do. Skip if nothing comes to mind.</p>
             </div>
             <textarea
               value={promise}

@@ -18,7 +18,7 @@ export default function ModeSelector({ current, onChange }: Props) {
         <button
           key={key}
           onClick={() => onChange(key)}
-          className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors ${
+          className={`flex-1 py-3 text-xs font-bold tracking-widest transition-colors min-h-[44px] ${
             current === key
               ? 'bg-primary text-primary-foreground'
               : 'bg-secondary text-muted-foreground hover:text-foreground'

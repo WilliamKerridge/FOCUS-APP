@@ -1,56 +1,70 @@
 import { useEffect, useState } from 'react'
-import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
 import AuthScreen from '@/components/auth/AuthScreen'
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow'
 import ModeSelector from '@/components/modes/ModeSelector'
 import WorkMode from '@/components/modes/WorkMode'
 import TransitionMode from '@/components/modes/TransitionMode'
 import HomeMode from '@/components/modes/HomeMode'
+import SettingsPage from '@/components/settings/SettingsPage'
 import type { Mode } from '@/types'
 
 type AppState = 'loading' | 'auth' | 'onboarding' | 'app'
 
 export default function App() {
+  const { user, loading: authLoading } = useAuth()
+  const { profile, loading: profileLoading, updateMode } = useProfile(user)
   const [appState, setAppState] = useState<AppState>('loading')
-  const [user, setUser] = useState<User | null>(null)
-  const [mode, setMode] = useState<Mode>('work')
+  const [showSettings, setShowSettings] = useState(false)
+
+  // Nudge when switching Work → Transition without a handoff
+  const [handoffNudge, setHandoffNudge] = useState(false)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session)
-    })
+    if (authLoading || profileLoading) return
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      handleSession(session)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  async function handleSession(session: Session | null) {
-    if (!session) {
-      setUser(null)
+    if (!user) {
       setAppState('auth')
       return
     }
 
-    setUser(session.user)
-
-    // Check onboarding status
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_complete')
-      .eq('id', session.user.id)
-      .maybeSingle()
-
     if (!profile || !profile.onboarding_complete) {
       setAppState('onboarding')
-    } else {
-      setAppState('app')
+      return
     }
+
+    setAppState('app')
+  }, [user, authLoading, profile, profileLoading])
+
+  async function handleModeChange(newMode: Mode) {
+    if (!user || !profile) return
+
+    // Nudge on Work → Transition if no end-of-day handoff today
+    if (profile.current_mode === 'work' && newMode === 'transition') {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await supabase
+        .from('handoffs')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('type', 'end_of_day')
+        .eq('date', today)
+        .maybeSingle()
+
+      if (!data) {
+        setHandoffNudge(true)
+        // Not a blocker — user can dismiss and switch anyway
+      }
+    } else {
+      setHandoffNudge(false)
+    }
+
+    await updateMode(newMode)
+  }
+
+  function handleSwitchToTransition() {
+    handleModeChange('transition')
   }
 
   if (appState === 'loading') {
@@ -61,9 +75,7 @@ export default function App() {
     )
   }
 
-  if (appState === 'auth') {
-    return <AuthScreen />
-  }
+  if (appState === 'auth') return <AuthScreen />
 
   if (appState === 'onboarding' && user) {
     return (
@@ -74,29 +86,66 @@ export default function App() {
     )
   }
 
-  if (appState === 'app' && user) {
+  if (appState === 'app' && user && profile) {
+    const currentMode = profile.current_mode
+
+    if (showSettings) {
+      return (
+        <div className="min-h-screen">
+          <div className="max-w-md mx-auto px-4 pt-4 pb-8">
+            <button
+              onClick={() => setShowSettings(false)}
+              className="text-sm text-muted-foreground hover:text-foreground mb-4 block"
+            >
+              ← Back
+            </button>
+            <SettingsPage user={user} profile={profile} />
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen">
-        <div className="max-w-md mx-auto px-4 pt-safe pb-8 min-h-screen flex flex-col">
+        <div className="max-w-md mx-auto px-4 pb-8 flex flex-col min-h-screen">
           {/* Header */}
           <div className="flex items-center justify-between py-4">
             <h1 className="text-lg font-bold tracking-wider">FOCUS</h1>
             <button
-              onClick={() => supabase.auth.signOut()}
+              onClick={() => setShowSettings(true)}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Sign out
+              Settings
             </button>
           </div>
 
           {/* Mode selector */}
-          <ModeSelector current={mode} onChange={setMode} />
+          <ModeSelector current={currentMode} onChange={handleModeChange} />
+
+          {/* Handoff nudge (dismissible) */}
+          {handoffNudge && (
+            <div className="mt-3 px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm flex items-start justify-between gap-3">
+              <span>You haven't filed a handoff yet — do that before switching off.</span>
+              <button
+                onClick={() => setHandoffNudge(false)}
+                className="text-yellow-400 hover:text-yellow-200 shrink-0 text-lg leading-none"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           {/* Mode content */}
           <div className="flex-1 mt-6">
-            {mode === 'work' && <WorkMode user={user} />}
-            {mode === 'transition' && <TransitionMode user={user} />}
-            {mode === 'home' && <HomeMode user={user} />}
+            {currentMode === 'work' && (
+              <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
+            )}
+            {currentMode === 'transition' && (
+              <TransitionMode user={user} />
+            )}
+            {currentMode === 'home' && (
+              <HomeMode user={user} />
+            )}
           </div>
         </div>
       </div>
