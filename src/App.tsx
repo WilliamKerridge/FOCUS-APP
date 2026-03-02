@@ -89,7 +89,7 @@ export default function App() {
           <div className="max-w-md mx-auto px-4 pt-4 pb-8">
             <button
               onClick={() => setShowSettings(false)}
-              className="text-sm text-muted-foreground hover:text-foreground mb-4 block"
+              className="text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center min-h-[44px] cursor-pointer"
             >
               ← Back
             </button>
@@ -107,7 +107,7 @@ export default function App() {
             <h1 className="text-lg font-bold tracking-wider">FOCUS</h1>
             <button
               onClick={() => setShowSettings(true)}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
             >
               Settings
             </button>
@@ -122,7 +122,8 @@ export default function App() {
               <span>You haven't filed a handoff yet — do that before switching off.</span>
               <button
                 onClick={() => setHandoffNudge(false)}
-                className="text-yellow-400 hover:text-yellow-200 shrink-0 text-lg leading-none"
+                aria-label="Dismiss"
+                className="text-yellow-400 hover:text-yellow-200 shrink-0 text-lg leading-none cursor-pointer"
               >
                 ×
               </button>

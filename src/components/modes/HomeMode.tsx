@@ -52,7 +52,7 @@ export default function HomeMode({ user }: Props) {
           <button
             type="submit"
             disabled={saving || !capture.trim()}
-            className="px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-40 active:scale-95 transition-transform"
+            className="px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
           >
             {saved ? '✓' : 'Save'}
           </button>

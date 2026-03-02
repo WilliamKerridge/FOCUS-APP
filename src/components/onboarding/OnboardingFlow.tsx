@@ -83,7 +83,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
           )}
           <button
             onClick={onComplete}
-            className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg active:scale-95 transition-transform"
+            className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
           >
             Open FOCUS
           </button>
@@ -118,7 +118,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
             <p className="text-muted-foreground text-sm">30 seconds to set up.</p>
             <button
               onClick={() => setStep(1)}
-              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg active:scale-95 transition-transform"
+              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
             >
               Let's go
             </button>
@@ -153,7 +153,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
             <button
               onClick={() => setStep(2)}
               disabled={workDays.length === 0}
-              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-40 active:scale-95 transition-transform"
+              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-40 cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
             >
               Next
             </button>
@@ -175,7 +175,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
             />
             <button
               onClick={() => setStep(3)}
-              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold active:scale-95 transition-transform"
+              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
             >
               Next
             </button>
@@ -199,7 +199,7 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
             <button
               onClick={handleDone}
               disabled={loading}
-              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 active:scale-95 transition-transform"
+              className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
             >
               {loading ? 'Setting up…' : "Done — let's go"}
             </button>

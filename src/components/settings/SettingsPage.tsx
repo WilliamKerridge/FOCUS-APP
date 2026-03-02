@@ -124,7 +124,7 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
         ) : (
           <button
             onClick={() => setShowSignOutConfirm(true)}
-            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium active:scale-95 transition-transform"
+            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
           >
             Sign out
           </button>

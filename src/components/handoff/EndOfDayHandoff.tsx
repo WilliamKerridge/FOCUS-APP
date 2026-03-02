@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
@@ -136,7 +137,7 @@ export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
             <p className="text-sm text-muted-foreground">Handoff saved. Ready to switch off?</p>
             <button
               onClick={onSwitchToTransition}
-              className="w-full py-3 rounded-lg bg-secondary border border-border font-medium text-sm active:scale-95 transition-transform"
+              className="w-full py-3 rounded-lg bg-secondary border border-border font-medium text-sm cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
             >
               Switch to Transition mode
             </button>
@@ -145,7 +146,7 @@ export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
 
         <button
           onClick={() => { setResult(null); setDoneToday(''); setUnfinished(''); setNextStart('') }}
-          className="text-xs text-muted-foreground hover:text-foreground underline"
+          className="text-xs text-muted-foreground hover:text-foreground underline cursor-pointer"
         >
           Redo handoff
         </button>
@@ -201,15 +202,16 @@ export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
       {error && (
         <div className="space-y-2">
           <p className="text-sm text-destructive">{error}</p>
-          <button onClick={handleSubmit} className="text-sm text-primary hover:underline">Retry</button>
+          <button onClick={handleSubmit} className="text-sm text-primary hover:underline cursor-pointer">Retry</button>
         </div>
       )}
 
       <button
         onClick={handleSubmit}
         disabled={loading}
-        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-40 active:scale-95 transition-transform"
+        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform flex items-center justify-center gap-2"
       >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         {loading ? 'Parking…' : 'Park it'}
       </button>
     </div>

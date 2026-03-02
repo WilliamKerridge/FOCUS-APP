@@ -19,7 +19,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
       <div className="space-y-4">
         <button
           onClick={() => setView('home')}
-          className="text-sm text-muted-foreground hover:text-foreground"
+          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
         >
           ← Back
         </button>
@@ -34,7 +34,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
       <div className="space-y-4">
         <button
           onClick={() => setView('home')}
-          className="text-sm text-muted-foreground hover:text-foreground"
+          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
         >
           ← Back
         </button>
@@ -54,7 +54,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
       <div className="grid gap-3">
         <button
           onClick={() => setView('kickstart')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left active:scale-[0.98] transition-transform"
+          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
         >
           <p className="font-semibold">Morning Kickstart</p>
           <p className="text-sm text-muted-foreground mt-0.5">Brain dump → sorted plan</p>
@@ -62,7 +62,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
 
         <button
           onClick={() => setView('handoff')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left active:scale-[0.98] transition-transform"
+          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
         >
           <p className="font-semibold">End of Day</p>
           <p className="text-sm text-muted-foreground mt-0.5">Park it, set tomorrow's start</p>

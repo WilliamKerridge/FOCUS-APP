@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import { updateStreak } from '@/hooks/useStreak'
@@ -155,7 +156,13 @@ export default function MorningKickstart({ user }: Props) {
   }
 
   if (checkingExisting) {
-    return <div className="text-muted-foreground text-sm">Loading…</div>
+    return (
+      <div className="space-y-3 animate-pulse">
+        <div className="h-20 rounded-lg bg-secondary" />
+        <div className="h-4 w-2/3 rounded-lg bg-secondary" />
+        <div className="h-4 w-1/2 rounded-lg bg-secondary" />
+      </div>
+    )
   }
 
   if (result && !loading) {
@@ -241,7 +248,7 @@ export default function MorningKickstart({ user }: Props) {
 
         <button
           onClick={() => { setResult(null); setWorkDump(''); setHomeDump('') }}
-          className="text-xs text-muted-foreground hover:text-foreground underline"
+          className="text-xs text-muted-foreground hover:text-foreground underline cursor-pointer"
         >
           Redo kickstart
         </button>
@@ -282,15 +289,16 @@ export default function MorningKickstart({ user }: Props) {
       {error && (
         <div className="space-y-2">
           <p className="text-sm text-destructive">{error}</p>
-          <button onClick={handleStart} className="text-sm text-primary hover:underline">Retry</button>
+          <button onClick={handleStart} className="text-sm text-primary hover:underline cursor-pointer">Retry</button>
         </div>
       )}
 
       <button
         onClick={handleStart}
         disabled={loading}
-        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-base disabled:opacity-40 active:scale-95 transition-transform"
+        className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-base disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform flex items-center justify-center gap-2"
       >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         {loading ? 'Sorting your day…' : 'Start my day'}
       </button>
     </div>

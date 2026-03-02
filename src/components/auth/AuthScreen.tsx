@@ -46,23 +46,31 @@ export default function AuthScreen() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div>
+            <label htmlFor="email" className="sr-only">Email</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="sr-only">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           {message && <p className="text-sm text-primary">{message}</p>}
@@ -70,7 +78,7 @@ export default function AuthScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 active:scale-95 transition-transform"
+            className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
           >
             {loading ? 'Loading…' : mode === 'login' ? 'Log in' : 'Sign up'}
           </button>
@@ -80,7 +88,7 @@ export default function AuthScreen() {
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(null) }}
-            className="text-primary hover:underline"
+            className="text-primary hover:underline cursor-pointer"
           >
             {mode === 'login' ? 'Sign up' : 'Log in'}
           </button>

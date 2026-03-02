@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
@@ -48,7 +49,7 @@ export default function TransitionMode({ user }: Props) {
           </div>
           <button
             onClick={() => setMessage(null)}
-            className="w-full py-3 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground active:scale-95 transition-transform"
+            className="w-full py-3 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
           >
             Reset
           </button>
@@ -58,8 +59,9 @@ export default function TransitionMode({ user }: Props) {
           <button
             onClick={handleTransition}
             disabled={loading}
-            className="w-full py-6 rounded-xl bg-primary text-primary-foreground font-semibold text-lg disabled:opacity-50 active:scale-95 transition-transform"
+            className="w-full py-6 rounded-xl bg-primary text-primary-foreground font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform flex items-center justify-center gap-2"
           >
+            {loading && <Loader2 className="h-5 w-5 animate-spin" />}
             {loading ? 'Parking work…' : "I'm done with work"}
           </button>
 
