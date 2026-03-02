@@ -9,6 +9,7 @@ import WorkMode from '@/components/modes/WorkMode'
 import TransitionMode from '@/components/modes/TransitionMode'
 import HomeMode from '@/components/modes/HomeMode'
 import SettingsPage from '@/components/settings/SettingsPage'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import type { Mode } from '@/types'
 
 type AppState = 'loading' | 'auth' | 'onboarding' | 'app'
@@ -137,15 +138,17 @@ export default function App() {
 
           {/* Mode content */}
           <div className="flex-1 mt-6">
-            {currentMode === 'work' && (
-              <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
-            )}
-            {currentMode === 'transition' && (
-              <TransitionMode user={user} />
-            )}
-            {currentMode === 'home' && (
-              <HomeMode user={user} />
-            )}
+            <ErrorBoundary>
+              {currentMode === 'work' && (
+                <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
+              )}
+              {currentMode === 'transition' && (
+                <TransitionMode user={user} />
+              )}
+              {currentMode === 'home' && (
+                <HomeMode user={user} />
+              )}
+            </ErrorBoundary>
           </div>
         </div>
       </div>

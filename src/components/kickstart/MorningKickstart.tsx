@@ -57,7 +57,8 @@ export default function MorningKickstart({ user }: Props) {
       .eq('type', 'morning_kickstart')
       .eq('date', today)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('Kickstart load error:', error)
         if (data) {
           setExistingId(data.id as string)
           setResult(data.content as KickstartContent)
@@ -262,7 +263,6 @@ export default function MorningKickstart({ user }: Props) {
           placeholder="Work tasks, emails, open loops, what's on your mind…"
           rows={5}
           className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none text-base"
-          autoFocus
         />
       </div>
 
