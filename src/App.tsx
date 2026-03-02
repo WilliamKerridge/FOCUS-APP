@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { checkHandoffExists } from '@/hooks/useHandoff'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import AuthScreen from '@/components/auth/AuthScreen'
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow'
 import ModeSelector from '@/components/modes/ModeSelector'
@@ -10,6 +11,8 @@ import TransitionMode from '@/components/modes/TransitionMode'
 import HomeMode from '@/components/modes/HomeMode'
 import SettingsPage from '@/components/settings/SettingsPage'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import MobileLayout from '@/components/layout/MobileLayout'
+import DesktopLayout from '@/components/layout/DesktopLayout'
 import type { Mode } from '@/types'
 
 type AppState = 'loading' | 'auth' | 'onboarding' | 'app'
@@ -17,6 +20,7 @@ type AppState = 'loading' | 'auth' | 'onboarding' | 'app'
 export default function App() {
   const { user, loading: authLoading } = useAuth()
   const { profile, loading: profileLoading, updateMode, updateProfile } = useProfile(user)
+  const { isDesktop } = useBreakpoint()
   const [appState, setAppState] = useState<AppState>('loading')
   const [showSettings, setShowSettings] = useState(false)
 
@@ -99,54 +103,48 @@ export default function App() {
       )
     }
 
-    return (
-      <div className="min-h-screen">
-        <div className="max-w-md mx-auto px-4 pb-8 flex flex-col min-h-screen">
-          {/* Header */}
-          <div className="flex items-center justify-between py-4">
-            <h1 className="text-lg font-bold tracking-wider">FOCUS</h1>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="text-xs text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
-            >
-              Settings
-            </button>
-          </div>
-
-          {/* Mode selector */}
-          <ModeSelector current={currentMode} onChange={handleModeChange} />
-
-          {/* Handoff nudge (dismissible) */}
-          {handoffNudge && (
-            <div className="mt-3 px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm flex items-start justify-between gap-3">
-              <span>You haven't filed a handoff yet — do that before switching off.</span>
-              <button
-                onClick={() => setHandoffNudge(false)}
-                aria-label="Dismiss"
-                className="text-yellow-400 hover:text-yellow-200 shrink-0 text-lg leading-none cursor-pointer"
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Mode content */}
-          <div className="flex-1 mt-6">
-            <ErrorBoundary>
-              {currentMode === 'work' && (
-                <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
-              )}
-              {currentMode === 'transition' && (
-                <TransitionMode user={user} />
-              )}
-              {currentMode === 'home' && (
-                <HomeMode user={user} />
-              )}
-            </ErrorBoundary>
-          </div>
-        </div>
+    const header = (
+      <div className="flex items-center justify-between py-4">
+        <h1 className="text-lg font-bold tracking-wider">FOCUS</h1>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="text-xs text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+        >
+          Settings
+        </button>
       </div>
     )
+
+    const modeSelector = (
+      <ModeSelector current={currentMode} onChange={handleModeChange} />
+    )
+
+    const nudge = handoffNudge ? (
+      <div className="mt-3 px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm flex items-start justify-between gap-3">
+        <span>You haven't filed a handoff yet — do that before switching off.</span>
+        <button
+          onClick={() => setHandoffNudge(false)}
+          aria-label="Dismiss"
+          className="text-yellow-400 hover:text-yellow-200 shrink-0 text-lg leading-none cursor-pointer"
+        >
+          ×
+        </button>
+      </div>
+    ) : undefined
+
+    const content = (
+      <ErrorBoundary>
+        {currentMode === 'work' && (
+          <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
+        )}
+        {currentMode === 'transition' && <TransitionMode user={user} />}
+        {currentMode === 'home' && <HomeMode user={user} />}
+      </ErrorBoundary>
+    )
+
+    const Layout = isDesktop ? DesktopLayout : MobileLayout
+
+    return <Layout header={header} modeSelector={modeSelector} nudge={nudge} content={content} />
   }
 
   return null
