@@ -46,6 +46,7 @@ export interface KickstartContent {
   main_focus: string
   must_today: string[]
   if_time: string[]
+  home_items: string[]
   flagged_promises: string[]
   yesterday_thread: string | null
   overcommitted: boolean
