@@ -8,6 +8,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('ANTHROPIC_API_KEY is not set')
+    return res.status(500).json({ error: 'API key not configured' })
+  }
+
   const { messages, systemPrompt } = req.body as {
     messages: Array<{ role: 'user' | 'assistant'; content: string }>
     systemPrompt?: string
@@ -38,7 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ text: content.text })
   } catch (err) {
-    console.error('Claude API error:', err)
-    return res.status(500).json({ error: 'Claude API call failed' })
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('Claude API error:', message)
+    return res.status(500).json({ error: message })
   }
 }

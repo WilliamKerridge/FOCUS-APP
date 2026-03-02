@@ -137,8 +137,9 @@ export default function MorningKickstart({ user }: Props) {
 
       await updateStreak(user.id, 'kickstart')
     } catch (err) {
-      console.error('Kickstart error:', err)
-      setError('Could not process — Claude is unavailable. Your notes have been saved.')
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('Kickstart error:', message)
+      setError(`Could not reach Claude: ${message}`)
       if (!existingId) {
         const today = new Date().toISOString().split('T')[0]
         await supabase.from('handoffs').insert({
