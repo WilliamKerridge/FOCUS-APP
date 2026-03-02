@@ -10,6 +10,7 @@ import WorkMode from '@/components/modes/WorkMode'
 import TransitionMode from '@/components/modes/TransitionMode'
 import HomeMode from '@/components/modes/HomeMode'
 import SettingsPage from '@/components/settings/SettingsPage'
+import WorkDesktop from '@/components/desktop/WorkDesktop'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import MobileLayout from '@/components/layout/MobileLayout'
 import DesktopLayout from '@/components/layout/DesktopLayout'
@@ -135,7 +136,9 @@ export default function App() {
     const content = (
       <ErrorBoundary>
         {currentMode === 'work' && (
-          <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
+          isDesktop
+            ? <WorkDesktop user={user} onSwitchToTransition={handleSwitchToTransition} />
+            : <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
         )}
         {currentMode === 'transition' && <TransitionMode user={user} />}
         {currentMode === 'home' && <HomeMode user={user} />}
