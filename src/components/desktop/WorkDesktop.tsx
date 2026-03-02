@@ -5,6 +5,7 @@ import KickstartPlanDisplay from '@/components/desktop/KickstartPlanDisplay'
 import FocusPanel from '@/components/desktop/FocusPanel'
 import DailyProgress from '@/components/desktop/DailyProgress'
 import { useTodayHandoffs } from '@/hooks/useTodayHandoffs'
+import { useEmailInbox } from '@/hooks/useEmailInbox'
 import { useTodayKickstart } from '@/hooks/useTodayKickstart'
 import MorningKickstart from '@/components/kickstart/MorningKickstart'
 import EndOfDayHandoff from '@/components/handoff/EndOfDayHandoff'
@@ -23,6 +24,8 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [showEmailDrop, setShowEmailDrop] = useState(false)
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
   const { plan, loading: loadingPlan, error: planError } = useTodayKickstart(user)
+  const { items: inboxItems } = useEmailInbox(user)
+  const inboxCount = inboxItems.length
 
   useEffect(() => {
     if (plan && !activeTask) {
@@ -86,9 +89,14 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
           </button>
           <button
             onClick={() => setShowEmailDrop(true)}
-            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform flex items-center justify-center gap-2 relative"
           >
             Process an email
+            {inboxCount > 0 && (
+              <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {inboxCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
