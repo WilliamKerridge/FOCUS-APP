@@ -7,6 +7,7 @@ import type { EmailInboxItem } from '@/types'
 export function useEmailInbox(user: User | null) {
   const [items, setItems] = useState<EmailInboxItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
@@ -23,6 +24,7 @@ export function useEmailInbox(user: User | null) {
         if (cancelled) return
         if (error) {
           console.error('Failed to load email inbox:', error)
+          setLoadError('Failed to load email inbox.')
         }
         setItems((data ?? []) as EmailInboxItem[])
         setLoading(false)
@@ -31,10 +33,18 @@ export function useEmailInbox(user: User | null) {
     return () => { cancelled = true }
   }, [user?.id])
 
-  const markReviewed = useCallback(async (id: string) => {
-    await supabase.from('email_inbox').update({ reviewed: true }).eq('id', id)
+  const markReviewed = useCallback(async (id: string): Promise<string | null> => {
+    const { error } = await supabase
+      .from('email_inbox')
+      .update({ reviewed: true })
+      .eq('id', id)
+    if (error) {
+      console.error('Failed to mark reviewed:', error)
+      return 'Could not mark as reviewed — try again.'
+    }
     setItems(prev => prev.filter(item => item.id !== id))
+    return null
   }, [])
 
-  return { items, loading, markReviewed }
+  return { items, loading, loadError, markReviewed }
 }

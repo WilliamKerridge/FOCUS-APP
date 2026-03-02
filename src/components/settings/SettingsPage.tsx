@@ -15,6 +15,9 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
   const [workDays, setWorkDays] = useState<string[]>(profile.work_days)
   const [transitionTime, setTransitionTime] = useState(profile.transition_time)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [personalEmailsDraft, setPersonalEmailsDraft] = useState(
+    (profile.personal_emails ?? []).join('\n')
+  )
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -120,9 +123,10 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
             Personal email addresses (one per line)
           </label>
           <textarea
-            value={(profile.personal_emails ?? []).join('\n')}
-            onChange={e => {
-              const emails = e.target.value.split('\n').map(s => s.trim()).filter(Boolean)
+            value={personalEmailsDraft}
+            onChange={e => setPersonalEmailsDraft(e.target.value)}
+            onBlur={() => {
+              const emails = personalEmailsDraft.split('\n').map(s => s.trim()).filter(Boolean)
               void updateProfile({ personal_emails: emails })
             }}
             rows={3}
