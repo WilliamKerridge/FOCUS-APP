@@ -9,8 +9,8 @@ interface UseFocusSessionReturn {
   todaySessionCount: number
   elapsedSeconds: number
   loading: boolean
-  startSession: (type: SessionType, durationMins: number, startContext: string) => Promise<void>
-  endSession: (endContext: string, exitedEarly: boolean) => Promise<void>
+  startSession: (type: SessionType, durationMins: number, startContext: string) => Promise<string | null>
+  endSession: (endContext: string, exitedEarly: boolean) => Promise<string | null>
 }
 
 export function useFocusSession(user: User | null): UseFocusSessionReturn {
@@ -59,10 +59,10 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
     type: SessionType,
     durationMins: number,
     startContext: string
-  ) => {
-    if (!user) return
+  ): Promise<string | null> => {
+    if (!user) return 'Not logged in'
     const today = new Date().toISOString().split('T')[0]
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('focus_sessions')
       .insert({
         user_id: user.id,
@@ -73,17 +73,22 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
       })
       .select()
       .single()
+    if (error) {
+      console.error('Start session error:', error)
+      return 'Could not start session — try again.'
+    }
     if (data) {
       setActiveSession(data as FocusSession)
       setElapsedSeconds(0)
     }
+    return null
   }, [user])
 
-  const endSession = useCallback(async (endContext: string, exitedEarly: boolean) => {
-    if (!user || !activeSession) return
+  const endSession = useCallback(async (endContext: string, exitedEarly: boolean): Promise<string | null> => {
+    if (!user || !activeSession) return 'No active session'
     const now = new Date().toISOString()
     const actualMins = Math.floor(elapsedSeconds / 60)
-    await supabase
+    const { error } = await supabase
       .from('focus_sessions')
       .update({
         end_context: endContext || null,
@@ -92,9 +97,14 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
         exited_early: exitedEarly,
       })
       .eq('id', activeSession.id)
+    if (error) {
+      console.error('End session error:', error)
+      return 'Could not save session — try again.'
+    }
     setActiveSession(null)
     setElapsedSeconds(0)
     setTodaySessionCount(c => c + 1)
+    return null
   }, [user, activeSession, elapsedSeconds])
 
   return { activeSession, todaySessionCount, elapsedSeconds, loading, startSession, endSession }
