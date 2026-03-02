@@ -8,13 +8,16 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 interface Props {
   user: User
   profile: Profile
-  updateProfile: (updates: Partial<Pick<Profile, 'work_days' | 'transition_time'>>) => Promise<{ error: Error | null }>
+  updateProfile: (updates: Partial<Pick<Profile, 'work_days' | 'transition_time' | 'personal_emails'>>) => Promise<{ error: Error | null }>
 }
 
 export default function SettingsPage({ user, profile, updateProfile }: Props) {
   const [workDays, setWorkDays] = useState<string[]>(profile.work_days)
   const [transitionTime, setTransitionTime] = useState(profile.transition_time)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [personalEmailsDraft, setPersonalEmailsDraft] = useState(
+    (profile.personal_emails ?? []).join('\n')
+  )
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -97,6 +100,41 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
       {saveError && (
         <p className="text-sm text-destructive">{saveError}</p>
       )}
+
+      {/* Email forwarding */}
+      <div className="space-y-3 pt-4 border-t border-border">
+        <div>
+          <p className="text-sm font-semibold">Email forwarding</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Forward or BCC emails to this address — FOCUS will extract the actions automatically.
+          </p>
+        </div>
+
+        <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Your FOCUS address</p>
+          <p className="text-sm font-mono select-all">add@[your-resend-domain]</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Emails from your personal addresses below are saved as Home tasks. Everything else is Work.
+          </p>
+        </div>
+
+        <div>
+          <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium block mb-1.5">
+            Personal email addresses (one per line)
+          </label>
+          <textarea
+            value={personalEmailsDraft}
+            onChange={e => setPersonalEmailsDraft(e.target.value)}
+            onBlur={() => {
+              const emails = personalEmailsDraft.split('\n').map(s => s.trim()).filter(Boolean)
+              void updateProfile({ personal_emails: emails })
+            }}
+            rows={3}
+            className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none text-sm font-mono"
+            placeholder="will1kerridge@gmail.com"
+          />
+        </div>
+      </div>
 
       {/* Account */}
       <div className="space-y-3 pt-4 border-t border-border">

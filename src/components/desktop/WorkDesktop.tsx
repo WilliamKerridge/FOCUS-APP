@@ -1,0 +1,110 @@
+// src/components/desktop/WorkDesktop.tsx
+import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
+import KickstartPlanDisplay from '@/components/desktop/KickstartPlanDisplay'
+import FocusPanel from '@/components/desktop/FocusPanel'
+import DailyProgress from '@/components/desktop/DailyProgress'
+import { useTodayHandoffs } from '@/hooks/useTodayHandoffs'
+import { useEmailInbox } from '@/hooks/useEmailInbox'
+import { useTodayKickstart } from '@/hooks/useTodayKickstart'
+import MorningKickstart from '@/components/kickstart/MorningKickstart'
+import EndOfDayHandoff from '@/components/handoff/EndOfDayHandoff'
+import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
+
+interface Props {
+  user: User
+  onSwitchToTransition: () => void
+}
+
+type DesktopView = 'work' | 'handoff'
+
+export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
+  const [activeTask, setActiveTask] = useState<string | null>(null)
+  const [view, setView] = useState<DesktopView>('work')
+  const [showEmailDrop, setShowEmailDrop] = useState(false)
+  const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
+  const { plan, loading: loadingPlan, error: planError } = useTodayKickstart(user)
+  const { items: inboxItems } = useEmailInbox(user)
+  const inboxCount = inboxItems.length
+
+  useEffect(() => {
+    if (plan && !activeTask) {
+      setActiveTask(plan.main_focus)
+    }
+  }, [plan]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (view === 'handoff') {
+    return (
+      <div className="space-y-4 max-w-lg">
+        <button
+          onClick={() => setView('work')}
+          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+        >
+          ← Back
+        </button>
+        <h2 className="text-lg font-bold">End of Day</h2>
+        <EndOfDayHandoff user={user} onSwitchToTransition={onSwitchToTransition} />
+      </div>
+    )
+  }
+
+  if (showEmailDrop) {
+    return <EmailDropOverlay user={user} onClose={() => setShowEmailDrop(false)} />
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-8">
+      {/* Left column — planning */}
+      <div className="space-y-4">
+        {planError && <p className="text-sm text-destructive">{planError}</p>}
+        {loadingPlan ? (
+          <div className="space-y-3 animate-pulse">
+            <div className="h-24 rounded-lg bg-secondary" />
+            <div className="h-16 rounded-lg bg-secondary" />
+            <div className="h-16 rounded-lg bg-secondary" />
+          </div>
+        ) : plan ? (
+          <KickstartPlanDisplay
+            plan={plan}
+            activeTask={activeTask}
+            onSelectTask={setActiveTask}
+          />
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">No kickstart yet today.</p>
+            <MorningKickstart user={user} />
+          </div>
+        )}
+
+        {/* Bottom actions */}
+        <div className="pt-2 space-y-2">
+          {!progressLoading && (
+            <DailyProgress kickstartDone={kickstartDone} endOfDayDone={endOfDayDone} />
+          )}
+          <button
+            onClick={() => setView('handoff')}
+            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform mt-3"
+          >
+            End of Day
+          </button>
+          <button
+            onClick={() => setShowEmailDrop(true)}
+            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform flex items-center justify-center gap-2 relative"
+          >
+            Process an email
+            {inboxCount > 0 && (
+              <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                {inboxCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Right column — doing */}
+      <div>
+        <FocusPanel user={user} activeTask={activeTask} />
+      </div>
+    </div>
+  )
+}
