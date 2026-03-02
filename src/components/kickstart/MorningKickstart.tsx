@@ -71,33 +71,35 @@ export default function MorningKickstart({ user }: Props) {
     setLoading(true)
     setError(null)
 
+    const today = new Date().toISOString().split('T')[0]
+
     const rawInput = [
       workDump.trim() ? `WORK:\n${workDump.trim()}` : '',
       homeDump.trim() ? `HOME:\n${homeDump.trim()}` : '',
     ].filter(Boolean).join('\n\n') || 'No input today.'
 
     try {
-      // Fetch yesterday's end-of-day handoff for the thread
-      const { data: lastEod } = await supabase
-        .from('handoffs')
-        .select('content')
-        .eq('user_id', user.id)
-        .eq('type', 'end_of_day')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      // Fetch yesterday's EOD handoff and current streak in parallel
+      const [{ data: lastEod }, { data: streakRow }] = await Promise.all([
+        supabase
+          .from('handoffs')
+          .select('content')
+          .eq('user_id', user.id)
+          .eq('type', 'end_of_day')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('streaks')
+          .select('current_streak')
+          .eq('user_id', user.id)
+          .eq('streak_type', 'kickstart')
+          .maybeSingle(),
+      ])
 
       const yesterdayThread = lastEod
         ? `\n\nYesterday's handoff — next_start: "${(lastEod.content as EndOfDayContent).next_start}"`
         : ''
-
-      // Fetch current streak for context
-      const { data: streakRow } = await supabase
-        .from('streaks')
-        .select('current_streak')
-        .eq('user_id', user.id)
-        .eq('streak_type', 'kickstart')
-        .maybeSingle()
 
       const streakCount = (streakRow as { current_streak: number } | null)?.current_streak ?? 0
       const systemPrompt = buildSystemPrompt(streakCount)
@@ -112,8 +114,6 @@ export default function MorningKickstart({ user }: Props) {
       const cleaned = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
       const parsed = JSON.parse(cleaned) as KickstartContent
       setResult(parsed)
-
-      const today = new Date().toISOString().split('T')[0]
 
       if (existingId) {
         await supabase
@@ -141,7 +141,6 @@ export default function MorningKickstart({ user }: Props) {
       console.error('Kickstart error:', message)
       setError(`Could not reach Claude: ${message}`)
       if (!existingId) {
-        const today = new Date().toISOString().split('T')[0]
         await supabase.from('handoffs').insert({
           user_id: user.id,
           type: 'morning_kickstart',

@@ -19,11 +19,12 @@ export default function OnboardingFlow({ user, onComplete }: Props) {
   const [loading, setLoading] = useState(false)
 
   function toggleDay(day: string) {
-    setWorkDays(prev =>
-      prev.includes(day)
+    setWorkDays(prev => {
+      if (prev.includes(day) && prev.length === 1) return prev
+      return prev.includes(day)
         ? prev.filter(d => d !== day)
         : [...prev, day].sort((a, b) => DAYS.indexOf(a) - DAYS.indexOf(b))
-    )
+    })
   }
 
   async function handleDone() {

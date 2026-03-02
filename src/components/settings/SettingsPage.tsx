@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useProfile } from '@/hooks/useProfile'
 import type { User } from '@supabase/supabase-js'
 import type { Profile } from '@/types'
 
@@ -9,10 +8,10 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 interface Props {
   user: User
   profile: Profile
+  updateProfile: (updates: Partial<Pick<Profile, 'work_days' | 'transition_time'>>) => Promise<{ error: Error | null }>
 }
 
-export default function SettingsPage({ user, profile }: Props) {
-  const { updateProfile } = useProfile(user)
+export default function SettingsPage({ user, profile, updateProfile }: Props) {
   const [workDays, setWorkDays] = useState<string[]>(profile.work_days)
   const [transitionTime, setTransitionTime] = useState(profile.transition_time)
   const [saveError, setSaveError] = useState<string | null>(null)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { checkHandoffExists } from '@/hooks/useHandoff'
 import AuthScreen from '@/components/auth/AuthScreen'
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow'
 import ModeSelector from '@/components/modes/ModeSelector'
@@ -16,7 +16,7 @@ type AppState = 'loading' | 'auth' | 'onboarding' | 'app'
 
 export default function App() {
   const { user, loading: authLoading } = useAuth()
-  const { profile, loading: profileLoading, updateMode } = useProfile(user)
+  const { profile, loading: profileLoading, updateMode, updateProfile } = useProfile(user)
   const [appState, setAppState] = useState<AppState>('loading')
   const [showSettings, setShowSettings] = useState(false)
 
@@ -45,15 +45,8 @@ export default function App() {
     // Nudge on Work → Transition if no end-of-day handoff today
     if (profile.current_mode === 'work' && newMode === 'transition') {
       const today = new Date().toISOString().split('T')[0]
-      const { data } = await supabase
-        .from('handoffs')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('type', 'end_of_day')
-        .eq('date', today)
-        .maybeSingle()
-
-      if (!data) {
+      const exists = await checkHandoffExists(user.id, 'end_of_day', today)
+      if (!exists) {
         setHandoffNudge(true)
         // Not a blocker — user can dismiss and switch anyway
       }
@@ -100,7 +93,7 @@ export default function App() {
             >
               ← Back
             </button>
-            <SettingsPage user={user} profile={profile} />
+            <SettingsPage user={user} profile={profile} updateProfile={updateProfile} />
           </div>
         </div>
       )
