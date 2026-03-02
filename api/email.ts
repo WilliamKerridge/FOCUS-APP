@@ -36,6 +36,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('Missing Supabase env vars')
+    return res.status(500).json({ error: 'Server misconfigured' })
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error('ANTHROPIC_API_KEY is not set')
+    return res.status(500).json({ error: 'API key not configured' })
+  }
+
+  if (!req.body || typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Invalid request body' })
+  }
+
   try {
     // Resend sends parsed email fields in the POST body
     const { from, subject, text, html } = req.body as {
@@ -56,8 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Determine context from sender
     const isPersonal = PERSONAL_EMAILS.includes(senderEmail)
     const context = isPersonal ? 'home' : 'work'
-    // Flag if sender is unknown — not personal and not a known work domain
-    const flagged = !isPersonal && !senderEmail.includes('cosworth')
+    // All non-personal email is flagged for review — user confirms context at review screen
+    const flagged = !isPersonal
 
     // Use plain text body for extraction, fall back to html, then subject
     const emailBody = text || html || subject || 'No body'
