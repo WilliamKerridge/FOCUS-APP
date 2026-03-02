@@ -134,7 +134,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
       <div className="text-center space-y-4 py-8">
         <p className="text-foreground font-medium">{savedCount} item{savedCount !== 1 ? 's' : ''} saved.</p>
         <button onClick={onDone} className="text-sm text-primary hover:underline cursor-pointer">
-          Back to Work
+          Return to Work
         </button>
       </div>
     )
@@ -193,7 +193,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
                 <span className="text-sm">{p.title}{p.made_to ? ` — to ${p.made_to}` : ''}</span>
               </label>
             ))}
-            <p className="text-xs text-muted-foreground italic">Promises saving coming in a future update.</p>
+
           </div>
         )}
 
@@ -201,7 +201,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
 
         <div className="flex gap-3 pt-2">
           <button
-            onClick={() => setView('input')}
+            onClick={() => { setView('input'); setError(null) }}
             className="flex-1 py-3 rounded-lg border border-border text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground"
           >
             Edit
