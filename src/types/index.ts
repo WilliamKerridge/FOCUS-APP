@@ -99,3 +99,28 @@ export interface ClaudeMessage {
   role: 'user' | 'assistant'
   content: string
 }
+
+export interface EmailExtractionAction {
+  title: string
+  priority: 'focus' | 'if_time' | 'must_today'
+  due_date: string | null
+}
+
+export interface EmailExtractionWaitingFor {
+  title: string
+  person: string
+  time_sensitive: boolean
+}
+
+export interface EmailExtractionPromise {
+  title: string
+  made_to: string | null
+  due_date: string | null
+}
+
+export interface EmailExtraction {
+  actions: EmailExtractionAction[]
+  waiting_for: EmailExtractionWaitingFor[]
+  promises: EmailExtractionPromise[]
+  summary: string
+}
