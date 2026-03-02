@@ -78,6 +78,23 @@ export interface Streak {
   updated_at: string
 }
 
+export type SessionType = 'work' | 'writing' | 'migration'
+
+export interface FocusSession {
+  id: string
+  user_id: string
+  type: SessionType
+  planned_duration_mins: number
+  actual_duration_mins: number | null
+  start_context: string
+  end_context: string | null
+  exited_early: boolean
+  started_at: string
+  ended_at: string | null
+  date: string
+  created_at: string
+}
+
 export interface ClaudeMessage {
   role: 'user' | 'assistant'
   content: string
