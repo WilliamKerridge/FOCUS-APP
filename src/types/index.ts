@@ -124,3 +124,15 @@ export interface EmailExtraction {
   promises: EmailExtractionPromise[]
   summary: string
 }
+
+export interface EmailInboxItem {
+  id: string
+  user_id: string
+  sender_email: string
+  context: 'work' | 'home'
+  subject: string | null
+  extraction: EmailExtraction | null
+  flagged: boolean
+  reviewed: boolean
+  created_at: string
+}
