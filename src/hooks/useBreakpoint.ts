@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react'
 
 export function useBreakpoint() {
   const [isDesktop, setIsDesktop] = useState(
-    () => window.innerWidth >= 768
+    () => typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 768px)').matches
+      : false
   )
 
   useEffect(() => {
