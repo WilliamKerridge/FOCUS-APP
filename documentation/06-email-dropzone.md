@@ -108,16 +108,29 @@ Clear the text area. Show: `"[N] items saved."` Return to Work Mode.
 
 ---
 
-## v2 — BCC Forwarding
+## v2 — Forward/BCC Routing
 
-In v2, William can BCC `focus@[domain]` on emails sent from Outlook. A Supabase Edge Function receives the email, runs the same extraction, and items appear in FOCUS ready for review — no manual pasting.
+In v2, William forwards or BCCs emails to a special FOCUS address. The email is parsed and items appear in FOCUS ready for review — no manual pasting required.
 
-Requirements:
-- Mailgun free tier (inbound email routing)
-- Supabase Edge Function (no additional cost)
-- Same confirmation flow before items are saved
+**Context is determined automatically by sender address:**
+- Work email (any address not in the personal list) → `context: 'work'`
+- `will1kerridge@gmail.com` → `context: 'home'`
+- `will1kerridge@aol.com` → `context: 'home'`
+- Unrecognised address → `context: 'work'`, flagged for review
 
-Do not build v2 BCC in Phase 2. It is Phase 4/5 work.
+Personal email addresses are configurable in Settings.
+
+**Architecture:**
+- **Resend** (free inbound tier) receives the email and POSTs parsed content to `api/email.ts`
+- `api/email.ts` (Vercel serverless) checks sender, calls Claude extraction, writes to `email_inbox` table
+- A badge appears on Work or Home mode when items are waiting for review
+- Same mandatory confirmation flow applies — nothing saves automatically
+
+**New table required:** `email_inbox` — see `docs/plans/2026-03-02-responsive-desktop-design.md` for schema.
+
+**The forwarding address is shown in Settings** so William can save it as an Outlook contact.
+
+Do not build v2 forwarding in Phase 2. It is Phase 2 work scheduled after the paste flow is live and the desktop layout is in place.
 
 ---
 
