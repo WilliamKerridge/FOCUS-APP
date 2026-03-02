@@ -8,6 +8,7 @@ import { useTodayHandoffs } from '@/hooks/useTodayHandoffs'
 import { useTodayKickstart } from '@/hooks/useTodayKickstart'
 import MorningKickstart from '@/components/kickstart/MorningKickstart'
 import EndOfDayHandoff from '@/components/handoff/EndOfDayHandoff'
+import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
 
 interface Props {
   user: User
@@ -19,6 +20,7 @@ type DesktopView = 'work' | 'handoff'
 export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [activeTask, setActiveTask] = useState<string | null>(null)
   const [view, setView] = useState<DesktopView>('work')
+  const [showEmailDrop, setShowEmailDrop] = useState(false)
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
   const { plan, loading: loadingPlan, error: planError } = useTodayKickstart(user)
 
@@ -41,6 +43,10 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
         <EndOfDayHandoff user={user} onSwitchToTransition={onSwitchToTransition} />
       </div>
     )
+  }
+
+  if (showEmailDrop) {
+    return <EmailDropOverlay user={user} onClose={() => setShowEmailDrop(false)} />
   }
 
   return (
@@ -77,6 +83,12 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform mt-3"
           >
             End of Day
+          </button>
+          <button
+            onClick={() => setShowEmailDrop(true)}
+            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+          >
+            Process an email
           </button>
         </div>
       </div>
