@@ -73,7 +73,11 @@ export default function EmailDropZone({ user, onDone }: Props) {
       setView('review')
     } catch (err) {
       console.error('Email extraction error:', err)
-      setError('Claude is unavailable — copy the key actions manually.')
+      if (err instanceof SyntaxError) {
+        setError('Extraction failed — try again or simplify the email.')
+      } else {
+        setError('Claude is unavailable — copy the key actions manually.')
+      }
       // Do NOT clear emailText — user needs to copy manually
     } finally {
       setLoading(false)
@@ -83,6 +87,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
   async function handleSave() {
     if (!extraction) return
     setSaving(true)
+    setError(null)
     let count = 0
 
     const actionInserts = extraction.actions
@@ -149,7 +154,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Actions for you</p>
             {extraction.actions.map((a, i) => (
-              <label key={i} className="flex items-start gap-3 cursor-pointer">
+              <label key={`action-${i}`} className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={checkedActions[i]}
@@ -166,7 +171,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Waiting for</p>
             {extraction.waiting_for.map((w, i) => (
-              <label key={i} className="flex items-start gap-3 cursor-pointer">
+              <label key={`waiting-${i}`} className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={checkedWaiting[i]}
@@ -183,7 +188,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Promises</p>
             {extraction.promises.map((p, i) => (
-              <label key={i} className="flex items-start gap-3 cursor-pointer">
+              <label key={`promise-${i}`} className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={checkedPromises[i]}
@@ -193,7 +198,9 @@ export default function EmailDropZone({ user, onDone }: Props) {
                 <span className="text-sm">{p.title}{p.made_to ? ` — to ${p.made_to}` : ''}</span>
               </label>
             ))}
-
+            <p className="text-xs text-muted-foreground mt-1">
+              Promises will be tracked in a future update.
+            </p>
           </div>
         )}
 
