@@ -5,6 +5,7 @@ export interface Profile {
   id: string
   work_days: string[]
   transition_time: string
+  personal_emails: string[]
   gamification_level: 'subtle' | 'full'
   tone: string
   onboarding_complete: boolean

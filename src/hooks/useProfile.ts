@@ -34,7 +34,7 @@ export function useProfile(user: User | null) {
       .eq('id', user.id)
   }, [user])
 
-  const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'work_days' | 'transition_time'>>) => {
+  const updateProfile = useCallback(async (updates: Partial<Pick<Profile, 'work_days' | 'transition_time' | 'personal_emails'>>) => {
     if (!user) return { error: new Error('Not logged in') }
     const { error } = await supabase
       .from('profiles')
