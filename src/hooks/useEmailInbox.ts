@@ -46,5 +46,42 @@ export function useEmailInbox(user: User | null) {
     return null
   }, [])
 
-  return { items, loading, loadError, markReviewed }
+  const saveInboxItems = useCallback(async (
+    inboxItemId: string,
+    taskInserts: Array<{
+      user_id: string
+      title: string
+      context: string
+      priority: number
+      due_date: string | null
+      source: string
+      status: string
+      waiting_for_person?: string
+    }>
+  ): Promise<string | null> => {
+    if (taskInserts.length > 0) {
+      const { error: insertError } = await supabase
+        .from('tasks')
+        .insert(taskInserts)
+      if (insertError) {
+        console.error('Failed to save tasks from inbox:', insertError)
+        return "Couldn't save — try again."
+      }
+    }
+
+    const { error: reviewError } = await supabase
+      .from('email_inbox')
+      .update({ reviewed: true })
+      .eq('id', inboxItemId)
+
+    if (reviewError) {
+      console.error('Failed to mark reviewed:', reviewError)
+      return "Couldn't mark as reviewed — try again."
+    }
+
+    setItems(prev => prev.filter(item => item.id !== inboxItemId))
+    return null
+  }, [])
+
+  return { items, loading, loadError, markReviewed, saveInboxItems }
 }

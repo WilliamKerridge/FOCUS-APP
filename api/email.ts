@@ -11,9 +11,6 @@ const supabase = createClient(
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-// Personal email addresses — these route to home context
-const PERSONAL_EMAILS = ['will1kerridge@gmail.com', 'will1kerridge@aol.com']
-
 const EMAIL_SYSTEM_PROMPT = `Extract actionable items from this email thread. Return ONLY valid JSON.
 
 Shape:
@@ -67,19 +64,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const senderMatch = from.match(/<(.+?)>/)
     const senderEmail = senderMatch ? senderMatch[1].toLowerCase() : from.toLowerCase()
 
-    // Determine context from sender
-    const isPersonal = PERSONAL_EMAILS.includes(senderEmail)
-    const context = isPersonal ? 'home' : 'work'
-    // All non-personal email is flagged for review — user confirms context at review screen
-    const flagged = !isPersonal
-
     // Use plain text body for extraction, fall back to html, then subject
     const emailBody = text || html || subject || 'No body'
 
-    // Get William's user_id from profiles (single-user app)
+    // Get William's user_id and personal_emails from profiles (single-user app)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, personal_emails')
       .limit(1)
       .single()
 
@@ -88,6 +79,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const userId = profile.id
+    const personalEmails: string[] = (profile.personal_emails as string[] | null) ?? []
+    const isPersonal = personalEmails.includes(senderEmail)
+    const context = isPersonal ? 'home' : 'work'
+    // All non-personal email is flagged for review — user confirms context at review screen
+    const flagged = !isPersonal
 
     // Run Claude extraction — if it fails, save to inbox with null extraction
     let extraction = null

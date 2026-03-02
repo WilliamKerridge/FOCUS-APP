@@ -1,17 +1,28 @@
 // src/components/email/EmailInboxReview.tsx
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { EmailInboxItem } from '@/types'
+
+type TaskInsert = {
+  user_id: string
+  title: string
+  context: string
+  priority: number
+  due_date: string | null
+  source: string
+  status: string
+  waiting_for_person?: string
+}
 
 interface Props {
   user: User
   item: EmailInboxItem
+  onSave: (inboxItemId: string, taskInserts: TaskInsert[]) => Promise<string | null>
   onDone: () => void
 }
 
-export default function EmailInboxReview({ user, item, onDone }: Props) {
+export default function EmailInboxReview({ user, item, onSave, onDone }: Props) {
   const extraction = item.extraction
   const [checkedActions, setCheckedActions] = useState(
     () => extraction?.actions.map(() => true) ?? []
@@ -25,6 +36,8 @@ export default function EmailInboxReview({ user, item, onDone }: Props) {
   async function handleSave() {
     setSaving(true)
     setError(null)
+
+    const taskInserts: TaskInsert[] = []
 
     if (extraction) {
       const actionInserts = extraction.actions
@@ -46,32 +59,18 @@ export default function EmailInboxReview({ user, item, onDone }: Props) {
           title: `${w.person}: ${w.title}`,
           context: 'waiting_for',
           priority: w.time_sensitive ? 1 : 3,
+          due_date: null,
           source: 'email_forward',
           status: 'open',
           waiting_for_person: w.person,
         }))
 
-      if (actionInserts.length + waitingInserts.length > 0) {
-        const { error: saveError } = await supabase
-          .from('tasks')
-          .insert([...actionInserts, ...waitingInserts])
-        if (saveError) {
-          console.error('Failed to save tasks:', saveError)
-          setError("Couldn't save — try again.")
-          setSaving(false)
-          return
-        }
-      }
+      taskInserts.push(...actionInserts, ...waitingInserts)
     }
 
-    const { error: reviewError } = await supabase
-      .from('email_inbox')
-      .update({ reviewed: true })
-      .eq('id', item.id)
-
-    if (reviewError) {
-      console.error('Failed to mark reviewed:', reviewError)
-      setError("Couldn't mark as reviewed — try again.")
+    const saveError = await onSave(item.id, taskInserts)
+    if (saveError) {
+      setError(saveError)
       setSaving(false)
       return
     }
