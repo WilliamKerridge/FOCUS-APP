@@ -117,7 +117,7 @@ export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
           </div>
         )}
 
-        {result.done_today.length > 0 && (
+        {(result.done_today?.length ?? 0) > 0 && (
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Done today</p>
             <ul className="space-y-1">

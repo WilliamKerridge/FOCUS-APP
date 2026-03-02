@@ -179,7 +179,7 @@ export default function MorningKickstart({ user }: Props) {
           </div>
         )}
 
-        {result.must_today.length > 0 && (
+        {(result.must_today?.length ?? 0) > 0 && (
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Must today</p>
             <ul className="space-y-1">
@@ -193,7 +193,7 @@ export default function MorningKickstart({ user }: Props) {
           </div>
         )}
 
-        {result.if_time.length > 0 && (
+        {(result.if_time?.length ?? 0) > 0 && (
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">If time</p>
             <ul className="space-y-1">
@@ -207,7 +207,7 @@ export default function MorningKickstart({ user }: Props) {
           </div>
         )}
 
-        {result.home_items && result.home_items.length > 0 && (
+        {(result.home_items?.length ?? 0) > 0 && (
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Home today</p>
             <ul className="space-y-1">
@@ -221,7 +221,7 @@ export default function MorningKickstart({ user }: Props) {
           </div>
         )}
 
-        {result.flagged_promises.length > 0 && (
+        {(result.flagged_promises?.length ?? 0) > 0 && (
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Promises due</p>
             <ul className="space-y-1">
