@@ -137,7 +137,7 @@ Do not build v2 forwarding in Phase 2. It is Phase 2 work scheduled after the pa
 ## Edge Cases
 
 - **Email is too long**: No hard limit. Claude handles long threads. Do not truncate on the frontend.
-- **Nothing extractable**: Claude returns empty arrays. Show: `"Nothing actionable found in this email."` Do not save anything.
+- **Nothing extractable**: Claude returns empty arrays. Show: `"Nothing actionable found: [Claude's summary]"` — include Claude's summary so the user understands why. Do not save anything.
 - **Claude API unavailable**: Show: `"Claude is unavailable — copy the key actions manually."` Do not lose the pasted text — keep it in the text area so William can read it.
 - **Pasted content is not an email**: Claude will return what it can. If the content is clearly not an email (e.g. a random paste), Claude returns a `summary` noting this, with empty extraction arrays. Show the summary and let William dismiss.
 - **Duplicate with existing task**: No deduplication logic. If an action is already in the task list, it will appear again. William sees it in the confirmation screen and can uncheck it.
