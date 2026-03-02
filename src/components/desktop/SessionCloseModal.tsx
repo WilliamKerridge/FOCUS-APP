@@ -16,7 +16,6 @@ export default function SessionCloseModal({ isEarlyExit, remainingMins, onKeepGo
   async function handleClose() {
     setSaving(true)
     await onClose(endContext)
-    setSaving(false)
   }
 
   return (

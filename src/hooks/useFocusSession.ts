@@ -9,6 +9,7 @@ interface UseFocusSessionReturn {
   todaySessionCount: number
   elapsedSeconds: number
   loading: boolean
+  loadError: string | null
   startSession: (type: SessionType, durationMins: number, startContext: string) => Promise<string | null>
   endSession: (endContext: string, exitedEarly: boolean) => Promise<string | null>
 }
@@ -18,6 +19,7 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
   const [todaySessionCount, setTodaySessionCount] = useState(0)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Load active session and today's count on mount
@@ -30,7 +32,12 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
       .select('*')
       .eq('user_id', user.id)
       .eq('date', today)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          setLoadError('Could not load sessions — try refreshing.')
+          setLoading(false)
+          return
+        }
         const sessions = (data ?? []) as FocusSession[]
         const open = sessions.find(s => !s.ended_at) ?? null
         setActiveSession(open)
@@ -107,5 +114,5 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
     return null
   }, [user, activeSession, elapsedSeconds])
 
-  return { activeSession, todaySessionCount, elapsedSeconds, loading, startSession, endSession }
+  return { activeSession, todaySessionCount, elapsedSeconds, loading, loadError, startSession, endSession }
 }

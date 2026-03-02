@@ -29,7 +29,7 @@ function formatTime(seconds: number): string {
 
 export default function FocusPanel({ user, activeTask }: Props) {
   const streak = useStreak(user, 'kickstart')
-  const { activeSession, todaySessionCount, elapsedSeconds, loading, startSession, endSession } =
+  const { activeSession, todaySessionCount, elapsedSeconds, loading, loadError, startSession, endSession } =
     useFocusSession(user)
 
   const [sessionType, setSessionType] = useState<SessionType>('work')
@@ -135,6 +135,11 @@ export default function FocusPanel({ user, activeTask }: Props) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Load error */}
+      {loadError && (
+        <p className="text-sm text-destructive">{loadError}</p>
       )}
 
       {/* Error */}
