@@ -15,11 +15,16 @@ export default function AbandonedSessionBanner({ session, onClose }: Props) {
   const timeStr = startedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   async function handleClose(endContext: string) {
-    const err = await onClose(endContext)
-    if (err) {
-      setError(err)
-    } else {
-      setShowModal(false)
+    try {
+      const err = await onClose(endContext)
+      if (err) {
+        setError(err)
+      } else {
+        setShowModal(false)
+      }
+    } catch (e) {
+      console.error('AbandonedSessionBanner close error:', e)
+      setError('Could not save — try again.')
     }
   }
 
