@@ -25,6 +25,7 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const closingRef = useRef(false)
 
   // Load active session and today's count on mount
   useEffect(() => {
@@ -52,18 +53,20 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
         }
         setLoading(false)
       })
-  }, [user])
+  }, [user?.id])
 
   // Detect abandoned sessions (no ended_at) on mount
   useEffect(() => {
     if (!user) return
     let cancelled = false
     async function checkAbandoned() {
+      const today = new Date().toISOString().split('T')[0]
       const { data } = await supabase
         .from('focus_sessions')
         .select('*')
         .eq('user_id', user!.id)
         .is('ended_at', null)
+        .lt('date', today)
         .order('started_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -108,8 +111,8 @@ Be direct. No preamble.`
       const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
       const parsed = JSON.parse(cleaned) as { start_context?: unknown }
       if (typeof parsed.start_context === 'string') startContext = parsed.start_context
-    } catch {
-      // Claude unavailable — use raw topic per spec
+    } catch (err) {
+      console.error('Claude start_context call failed, using raw topic:', err)
     }
 
     const { data, error } = await supabase
@@ -158,7 +161,8 @@ Be direct. No preamble.`
   }, [user, activeSession, elapsedSeconds])
 
   const closeAbandoned = useCallback(async (endContext: string): Promise<string | null> => {
-    if (!abandonedSession) return null
+    if (!abandonedSession || closingRef.current) return null
+    closingRef.current = true
     const now = new Date().toISOString()
     const actualMins = Math.round(
       (new Date(now).getTime() - new Date(abandonedSession.started_at).getTime()) / 60000
@@ -174,9 +178,11 @@ Be direct. No preamble.`
       .eq('id', abandonedSession.id)
     if (error) {
       console.error('closeAbandoned error:', error)
+      closingRef.current = false
       return 'Could not save — try again.'
     }
     setAbandonedSession(null)
+    closingRef.current = false
     return null
   }, [abandonedSession])
 
