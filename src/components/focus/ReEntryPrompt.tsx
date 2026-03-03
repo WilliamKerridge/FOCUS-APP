@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
-import type { KickstartContent } from '@/types'
+import { useReEntryContext } from '@/hooks/useReEntryContext'
 
 interface Props {
   user: User
@@ -11,38 +10,16 @@ interface Props {
 
 export default function ReEntryPrompt({ user }: Props) {
   const [result, setResult] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { loading, fetchContext } = useReEntryContext(user)
 
   async function handleReEntry() {
-    setLoading(true)
     setError(null)
     setResult(null)
 
     try {
-      const today = new Date().toISOString().split('T')[0]
-
-      const [{ data: sessionData }, { data: kickstartData }] = await Promise.all([
-        supabase
-          .from('focus_sessions')
-          .select('end_context')
-          .eq('user_id', user.id)
-          .eq('date', today)
-          .not('end_context', 'is', null)
-          .order('started_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from('handoffs')
-          .select('content')
-          .eq('user_id', user.id)
-          .eq('type', 'morning_kickstart')
-          .eq('date', today)
-          .maybeSingle(),
-      ])
-
-      const endContext = (sessionData as { end_context: string } | null)?.end_context ?? null
-      const mainFocus = (kickstartData?.content as KickstartContent | null)?.main_focus ?? null
+      const ctx = await fetchContext()
+      if (!ctx) return // error already set in hook
 
       const systemPrompt = `You are FOCUS. William needs to re-orient after an interruption.
 
@@ -51,8 +28,8 @@ Last position: [what William was doing]
 Next action: [specific physical next step — not vague, not 'continue working on X']`
 
       const userMessage = [
-        mainFocus ? `Today's main focus: ${mainFocus}` : null,
-        endContext ? `Last session end context: ${endContext}` : null,
+        ctx.mainFocus ? `Today's main focus: ${ctx.mainFocus}` : null,
+        ctx.endContext ? `Last session end context: ${ctx.endContext}` : null,
       ].filter(Boolean).join('\n') || 'No context available for today.'
 
       const text = await callClaude([{ role: 'user', content: userMessage }], systemPrompt)
@@ -61,8 +38,6 @@ Next action: [specific physical next step — not vague, not 'continue working o
       const message = err instanceof Error ? err.message : String(err)
       console.error('Re-entry error:', message)
       setError('Could not reach Claude — check your last session notes manually.')
-    } finally {
-      setLoading(false)
     }
   }
 

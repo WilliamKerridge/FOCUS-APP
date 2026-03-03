@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
 import type { FocusSession, SessionType } from '@/types'
+import { getToday } from '@/lib/utils'
 
 interface UseFocusSessionReturn {
   activeSession: FocusSession | null
@@ -30,14 +31,15 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
   // Load active session and today's count on mount
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    const today = new Date().toISOString().split('T')[0]
-
+    let cancelled = false
+    const today = getToday()
     supabase
       .from('focus_sessions')
       .select('*')
       .eq('user_id', user.id)
       .eq('date', today)
       .then(({ data, error }) => {
+        if (cancelled) return
         if (error) {
           setLoadError('Could not load sessions — try refreshing.')
           setLoading(false)
@@ -53,6 +55,7 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
         }
         setLoading(false)
       })
+    return () => { cancelled = true }
   }, [user?.id])
 
   // Detect abandoned sessions (no ended_at) on mount
@@ -60,7 +63,7 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
     if (!user) return
     let cancelled = false
     async function checkAbandoned() {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getToday()
       const { data } = await supabase
         .from('focus_sessions')
         .select('*')
@@ -94,7 +97,7 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
     topic: string
   ): Promise<string | null> => {
     if (!user) return 'Not logged in'
-    const today = new Date().toISOString().split('T')[0]
+    const today = getToday()
 
     const systemPrompt = `You are FOCUS. William is starting a focus session.
 Session type: ${type}

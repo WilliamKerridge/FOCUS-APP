@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import type { SessionType } from '@/types'
 import { useFocusSession } from '@/hooks/useFocusSession'
 import SessionCloseModal from '@/components/desktop/SessionCloseModal'
+import { formatTime } from '@/lib/utils'
 
 interface Props {
   user: User
@@ -19,12 +20,6 @@ const SESSION_TYPES: { key: SessionType; label: string }[] = [
 
 const DURATIONS = [25, 45, 60, 90]
 const MAX_DOTS = 4
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60).toString().padStart(2, '0')
-  const s = (seconds % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
-}
 
 export default function SessionPanel({ user, initialTask }: Props) {
   const {
@@ -65,18 +60,12 @@ export default function SessionPanel({ user, initialTask }: Props) {
     }
   }, [elapsedSeconds, activeSession, plannedSeconds, showCloseModal])
 
-  function getEffectiveDuration(): number {
-    if (useCustom) {
-      const val = parseInt(customDuration, 10)
-      if (isNaN(val) || val < 25) return 25
-      if (val > 120) return 120
-      return val
-    }
-    return duration
-  }
+  const parsedCustom = parseInt(customDuration, 10)
+  const effectiveCustomDuration = isNaN(parsedCustom) || parsedCustom < 25 ? 25 : Math.min(parsedCustom, 120)
+  const effectiveDuration = useCustom ? effectiveCustomDuration : duration
+  const showCapNote = useCustom && !isNaN(parsedCustom) && parsedCustom > 120
 
   async function handleStart() {
-    const effectiveDuration = getEffectiveDuration()
     if (!topic.trim()) return
     setStarting(true)
     setSessionError(null)
@@ -95,9 +84,6 @@ export default function SessionPanel({ user, initialTask }: Props) {
     setShowCloseModal(false)
     setAutoTriggered(false)
   }
-
-  const customDurationNum = parseInt(customDuration, 10)
-  const showCapNote = useCustom && !isNaN(customDurationNum) && customDurationNum > 120
 
   if (loading) {
     return <div className="animate-pulse h-64 rounded-xl bg-secondary" />

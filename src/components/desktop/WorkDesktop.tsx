@@ -58,7 +58,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
 
   return (
     <div className="space-y-4">
-    {!showEmailDrop && view === 'work' && abandonedSession && (
+    {abandonedSession && (
       <AbandonedSessionBanner session={abandonedSession} onClose={closeAbandoned} />
     )}
     <div className="grid grid-cols-2 gap-8">
