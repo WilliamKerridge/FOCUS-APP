@@ -10,6 +10,9 @@ import { useTodayKickstart } from '@/hooks/useTodayKickstart'
 import MorningKickstart from '@/components/kickstart/MorningKickstart'
 import EndOfDayHandoff from '@/components/handoff/EndOfDayHandoff'
 import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
+import { useFocusSession } from '@/hooks/useFocusSession'
+import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
+import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 
 interface Props {
   user: User
@@ -26,6 +29,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const { plan, loading: loadingPlan, error: planError } = useTodayKickstart(user)
   const { items: inboxItems } = useEmailInbox(user)
   const inboxCount = inboxItems.length
+  const { abandonedSession, closeAbandoned } = useFocusSession(user)
 
   useEffect(() => {
     if (plan && !activeTask) {
@@ -53,6 +57,10 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   }
 
   return (
+    <div className="space-y-4">
+    {!showEmailDrop && view === 'work' && abandonedSession && (
+      <AbandonedSessionBanner session={abandonedSession} onClose={closeAbandoned} />
+    )}
     <div className="grid grid-cols-2 gap-8">
       {/* Left column — planning */}
       <div className="space-y-4">
@@ -81,6 +89,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
           {!progressLoading && (
             <DailyProgress kickstartDone={kickstartDone} endOfDayDone={endOfDayDone} />
           )}
+          <ReEntryPrompt user={user} />
           <button
             onClick={() => setView('handoff')}
             className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform mt-3"
@@ -105,6 +114,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
       <div>
         <FocusPanel user={user} activeTask={activeTask} />
       </div>
+    </div>
     </div>
   )
 }
