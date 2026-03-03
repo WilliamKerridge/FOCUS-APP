@@ -3,6 +3,10 @@ import type { User } from '@supabase/supabase-js'
 import MorningKickstart from '@/components/kickstart/MorningKickstart'
 import EndOfDayHandoff from '@/components/handoff/EndOfDayHandoff'
 import StreakCounter from '@/components/streaks/StreakCounter'
+import { useFocusSession } from '@/hooks/useFocusSession'
+import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
+import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
+import SessionPanel from '@/components/focus/SessionPanel'
 
 type WorkView = 'home' | 'kickstart' | 'handoff'
 
@@ -13,6 +17,7 @@ interface Props {
 
 export default function WorkMode({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<WorkView>('home')
+  const { abandonedSession, closeAbandoned } = useFocusSession(user)
 
   if (view === 'kickstart') {
     return (
@@ -46,6 +51,10 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
 
   return (
     <div className="space-y-6">
+      {abandonedSession && (
+        <AbandonedSessionBanner session={abandonedSession} onClose={closeAbandoned} />
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Work</h2>
         <StreakCounter user={user} />
@@ -67,6 +76,14 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
           <p className="font-semibold">End of Day</p>
           <p className="text-sm text-muted-foreground mt-0.5">Park it, set tomorrow's start</p>
         </button>
+      </div>
+
+      <div className="pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
+        <ReEntryPrompt user={user} />
+        <div className="mt-4">
+          <SessionPanel user={user} />
+        </div>
       </div>
     </div>
   )
