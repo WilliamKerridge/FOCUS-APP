@@ -1,26 +1,31 @@
 // src/hooks/useFocusSession.ts
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
 import type { FocusSession, SessionType } from '@/types'
 
 interface UseFocusSessionReturn {
   activeSession: FocusSession | null
+  abandonedSession: FocusSession | null
   todaySessionCount: number
   elapsedSeconds: number
   loading: boolean
   loadError: string | null
-  startSession: (type: SessionType, durationMins: number, startContext: string) => Promise<string | null>
+  startSession: (type: SessionType, durationMins: number, topic: string) => Promise<string | null>
   endSession: (endContext: string, exitedEarly: boolean) => Promise<string | null>
+  closeAbandoned: (endContext: string) => Promise<string | null>
 }
 
 export function useFocusSession(user: User | null): UseFocusSessionReturn {
   const [activeSession, setActiveSession] = useState<FocusSession | null>(null)
+  const [abandonedSession, setAbandonedSession] = useState<FocusSession | null>(null)
   const [todaySessionCount, setTodaySessionCount] = useState(0)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const closingRef = useRef(false)
 
   // Load active session and today's count on mount
   useEffect(() => {
@@ -48,7 +53,28 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
         }
         setLoading(false)
       })
-  }, [user])
+  }, [user?.id])
+
+  // Detect abandoned sessions (no ended_at) on mount
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    async function checkAbandoned() {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await supabase
+        .from('focus_sessions')
+        .select('*')
+        .eq('user_id', user!.id)
+        .is('ended_at', null)
+        .lt('date', today)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!cancelled && data) setAbandonedSession(data as FocusSession)
+    }
+    checkAbandoned()
+    return () => { cancelled = true }
+  }, [user?.id])
 
   // Tick timer when session is active
   useEffect(() => {
@@ -65,10 +91,30 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
   const startSession = useCallback(async (
     type: SessionType,
     durationMins: number,
-    startContext: string
+    topic: string
   ): Promise<string | null> => {
     if (!user) return 'Not logged in'
     const today = new Date().toISOString().split('T')[0]
+
+    const systemPrompt = `You are FOCUS. William is starting a focus session.
+Session type: ${type}
+Topic: ${topic}
+
+Return ONLY valid JSON, no markdown:
+{"start_context": "One sentence: what William is doing and the first physical step. Be specific — not 'work on email' but 'open Outlook and reply to [person]'."}
+
+Be direct. No preamble.`
+
+    let startContext = topic // fallback if Claude unavailable
+    try {
+      const raw = await callClaude([{ role: 'user', content: topic }], systemPrompt)
+      const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+      const parsed = JSON.parse(cleaned) as { start_context?: unknown }
+      if (typeof parsed.start_context === 'string') startContext = parsed.start_context
+    } catch (err) {
+      console.error('Claude start_context call failed, using raw topic:', err)
+    }
+
     const { data, error } = await supabase
       .from('focus_sessions')
       .insert({
@@ -114,5 +160,41 @@ export function useFocusSession(user: User | null): UseFocusSessionReturn {
     return null
   }, [user, activeSession, elapsedSeconds])
 
-  return { activeSession, todaySessionCount, elapsedSeconds, loading, loadError, startSession, endSession }
+  const closeAbandoned = useCallback(async (endContext: string): Promise<string | null> => {
+    if (!abandonedSession || closingRef.current) return null
+    closingRef.current = true
+    const now = new Date().toISOString()
+    const actualMins = Math.round(
+      (new Date(now).getTime() - new Date(abandonedSession.started_at).getTime()) / 60000
+    )
+    const { error } = await supabase
+      .from('focus_sessions')
+      .update({
+        ended_at: now,
+        actual_duration_mins: actualMins,
+        end_context: endContext || null,
+        exited_early: true,
+      })
+      .eq('id', abandonedSession.id)
+    if (error) {
+      console.error('closeAbandoned error:', error)
+      closingRef.current = false
+      return 'Could not save — try again.'
+    }
+    setAbandonedSession(null)
+    closingRef.current = false
+    return null
+  }, [abandonedSession])
+
+  return {
+    activeSession,
+    abandonedSession,
+    todaySessionCount,
+    elapsedSeconds,
+    loading,
+    loadError,
+    startSession,
+    endSession,
+    closeAbandoned,
+  }
 }

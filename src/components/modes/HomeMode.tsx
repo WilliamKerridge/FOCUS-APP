@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import SessionPanel from '@/components/focus/SessionPanel'
 
 interface Props {
   user: User
@@ -63,6 +64,11 @@ export default function HomeMode({ user }: Props) {
         <p className="text-sm text-muted-foreground">
           Promise tracker, presence check, and shared visibility with Claire coming in Phase 2.
         </p>
+      </div>
+
+      <div className="pt-4 border-t border-border mt-4">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
+        <SessionPanel user={user} />
       </div>
     </div>
   )
