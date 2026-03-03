@@ -44,7 +44,7 @@ export default function AbandonedSessionBanner({ session, onClose }: Props) {
         <SessionCloseModal
           isEarlyExit={true}
           remainingMins={0}
-          autoTriggered={false}
+          autoTriggered={true}
           onKeepGoing={() => setShowModal(false)}
           onClose={handleClose}
         />
