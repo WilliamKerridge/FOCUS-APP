@@ -7,9 +7,11 @@ interface Props {
   remainingMins: number
   onKeepGoing: () => void
   onClose: (endContext: string) => Promise<void>
+  autoTriggered?: boolean
 }
 
-export default function SessionCloseModal({ isEarlyExit, remainingMins, onKeepGoing, onClose }: Props) {
+export default function SessionCloseModal({ isEarlyExit, remainingMins, onKeepGoing, onClose, autoTriggered }: Props) {
+  const showEarlyExitWarning = isEarlyExit && !autoTriggered
   const [endContext, setEndContext] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -21,7 +23,7 @@ export default function SessionCloseModal({ isEarlyExit, remainingMins, onKeepGo
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
       <div className="w-full max-w-sm bg-secondary border border-border rounded-xl p-6 space-y-4">
-        {isEarlyExit && (
+        {showEarlyExitWarning && (
           <p className="text-sm text-muted-foreground">
             {remainingMins} minute{remainingMins !== 1 ? 's' : ''} remaining.
           </p>
@@ -42,7 +44,7 @@ export default function SessionCloseModal({ isEarlyExit, remainingMins, onKeepGo
         </div>
 
         <div className="flex gap-3">
-          {isEarlyExit && (
+          {showEarlyExitWarning && (
             <button
               onClick={onKeepGoing}
               className="flex-1 py-3 rounded-lg border border-border text-sm font-medium cursor-pointer hover:text-foreground text-muted-foreground"
