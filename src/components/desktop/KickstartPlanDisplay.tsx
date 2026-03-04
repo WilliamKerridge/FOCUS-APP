@@ -8,10 +8,30 @@ interface Props {
   onSelectTask?: (task: string) => void
   onRedo?: () => void
   onItemComplete?: (title: string, context: 'work' | 'home') => void
+  userId?: string
 }
 
-export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete }: Props) {
-  const [checked, setChecked] = useState<Set<string>>(new Set())
+export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete, userId }: Props) {
+  const storageKey = userId
+    ? `kickstart-checked-${userId}-${new Date().toISOString().split('T')[0]}`
+    : null
+
+  const [checked, setChecked] = useState<Set<string>>(() => {
+    if (!storageKey) return new Set<string>()
+    try {
+      const stored = localStorage.getItem(storageKey)
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>()
+    } catch { return new Set<string>() }
+  })
+
+  // Keys already persisted to DB — restored from localStorage means already written
+  const [persistedKeys] = useState<Set<string>>(() => {
+    if (!storageKey) return new Set<string>()
+    try {
+      const stored = localStorage.getItem(storageKey)
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>()
+    } catch { return new Set<string>() }
+  })
 
   function toggleItem(key: string, title: string, context: 'work' | 'home') {
     setChecked(prev => {
@@ -20,7 +40,13 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         next.delete(key)
       } else {
         next.add(key)
-        onItemComplete?.(title, context)
+        if (!persistedKeys.has(key)) {
+          onItemComplete?.(title, context)
+          persistedKeys.add(key)
+        }
+      }
+      if (storageKey) {
+        try { localStorage.setItem(storageKey, JSON.stringify([...next])) } catch {}
       }
       return next
     })

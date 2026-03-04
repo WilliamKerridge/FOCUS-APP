@@ -95,6 +95,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             onSelectTask={setActiveTask}
             onRedo={() => setRedoingKickstart(true)}
             onItemComplete={createCompletedTask}
+            userId={user.id}
           />
         ) : (
           <div className="space-y-4">

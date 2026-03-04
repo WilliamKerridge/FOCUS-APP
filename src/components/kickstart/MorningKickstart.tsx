@@ -247,6 +247,7 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
             onSelectTask={onSelectTask}
             onRedo={() => { setResult(null); setWorkDump(''); setHomeDump('') }}
             onItemComplete={onItemComplete}
+            userId={user.id}
           />
         )}
       </div>
