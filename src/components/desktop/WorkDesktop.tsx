@@ -15,13 +15,14 @@ import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
 import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 import TaskList from '@/components/tasks/TaskList'
 import { useTaskList } from '@/hooks/useTaskList'
+import ReviewScreen from '@/components/review/ReviewScreen'
 
 interface Props {
   user: User
   onSwitchToTransition: () => void
 }
 
-type DesktopView = 'work' | 'handoff'
+type DesktopView = 'work' | 'handoff' | 'review'
 
 export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [activeTask, setActiveTask] = useState<string | null>(null)
@@ -29,7 +30,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<DesktopView>('work')
   const [showEmailDrop, setShowEmailDrop] = useState(false)
   const [redoingKickstart, setRedoingKickstart] = useState(false)
-  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone } = useTaskList(user, ['work', 'waiting_for'])
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask } = useTaskList(user, ['work', 'waiting_for'])
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
   const { plan, loading: loadingPlan, error: planError, refreshPlan } = useTodayKickstart(user)
   const { items: inboxItems } = useEmailInbox(user)
@@ -47,6 +48,23 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
       <div className="space-y-4 max-w-lg">
         <h2 className="text-lg font-bold">End of Day</h2>
         <EndOfDayHandoff user={user} onBack={() => setView('work')} onSwitchToTransition={onSwitchToTransition} />
+      </div>
+    )
+  }
+
+  if (view === 'review') {
+    return (
+      <div className="space-y-4 max-w-2xl">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setView('work')}
+            className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+          >
+            ← Back
+          </button>
+          <h2 className="text-lg font-bold">Weekly Review</h2>
+        </div>
+        <ReviewScreen user={user} />
       </div>
     )
   }
@@ -76,6 +94,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             activeTask={activeTask}
             onSelectTask={setActiveTask}
             onRedo={() => setRedoingKickstart(true)}
+            onItemComplete={createCompletedTask}
           />
         ) : (
           <div className="space-y-4">
@@ -110,6 +129,12 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform mt-3"
           >
             End of Day
+          </button>
+          <button
+            onClick={() => setView('review')}
+            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+          >
+            Weekly Review
           </button>
           <button
             onClick={() => setShowEmailDrop(true)}

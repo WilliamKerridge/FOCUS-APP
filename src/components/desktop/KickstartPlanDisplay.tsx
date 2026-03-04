@@ -7,20 +7,26 @@ interface Props {
   activeTask?: string | null
   onSelectTask?: (task: string) => void
   onRedo?: () => void
+  onItemComplete?: (title: string, context: 'work' | 'home') => void
 }
 
-export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo }: Props) {
+export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete }: Props) {
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
-  function toggleItem(key: string) {
+  function toggleItem(key: string, title: string, context: 'work' | 'home') {
     setChecked(prev => {
       const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+        onItemComplete?.(title, context)
+      }
       return next
     })
   }
 
-  function itemRow(item: string, key: string, bulletColor: string) {
+  function itemRow(item: string, key: string, bulletColor: string, context: 'work' | 'home') {
     const done = checked.has(key)
     const isActive = item === activeTask
     return (
@@ -31,7 +37,7 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         }`}
       >
         <button
-          onClick={() => toggleItem(key)}
+          onClick={() => toggleItem(key, item, context)}
           className="shrink-0 mt-0.5 cursor-pointer w-4 text-left"
         >
           {done ? <span className="text-green-400">✓</span> : <span className={bulletColor}>•</span>}
@@ -83,7 +89,7 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Must today</p>
           <ul className="space-y-1">
-            {plan.must_today.map((item, i) => itemRow(item, `must_${i}`, 'text-destructive'))}
+            {plan.must_today.map((item, i) => itemRow(item, `must_${i}`, 'text-destructive', 'work'))}
           </ul>
         </div>
       )}
@@ -93,7 +99,7 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">If time</p>
           <ul className="space-y-1">
-            {plan.if_time.map((item, i) => itemRow(item, `if_${i}`, 'text-muted-foreground'))}
+            {plan.if_time.map((item, i) => itemRow(item, `if_${i}`, 'text-muted-foreground', 'work'))}
           </ul>
         </div>
       )}
@@ -103,7 +109,7 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Home today</p>
           <ul className="space-y-1">
-            {plan.home_items.map((item, i) => itemRow(item, `home_${i}`, 'text-blue-400'))}
+            {plan.home_items.map((item, i) => itemRow(item, `home_${i}`, 'text-blue-400', 'home'))}
           </ul>
         </div>
       )}

@@ -50,6 +50,22 @@ export default function EndOfDayHandoff({ user, onBack, onSwitchToTransition }: 
       })
   }, [user.id])
 
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    supabase
+      .from('tasks')
+      .select('title')
+      .eq('user_id', user.id)
+      .eq('status', 'done')
+      .gte('completed_at', `${today}T00:00:00Z`)
+      .order('completed_at', { ascending: true })
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        const titles = (data as { title: string }[]).map(t => `- ${t.title}`).join('\n')
+        setDoneToday(prev => prev.trim() === '' ? titles : prev)
+      })
+  }, [user.id])
+
   async function handleSubmit() {
     setLoading(true)
     setError(null)

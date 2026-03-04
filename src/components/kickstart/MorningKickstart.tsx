@@ -12,6 +12,7 @@ interface Props {
   onBack?: () => void
   onComplete?: () => void
   onSelectTask?: (task: string) => void
+  onItemComplete?: (title: string, context: 'work' | 'home') => void
 }
 
 function buildSystemPrompt(streakCount: number, weeklyTaskCount: number): string {
@@ -49,7 +50,7 @@ Rules:
 `
 }
 
-export default function MorningKickstart({ user, onBack, onComplete, onSelectTask }: Props) {
+export default function MorningKickstart({ user, onBack, onComplete, onSelectTask, onItemComplete }: Props) {
   const [workDump, setWorkDump] = useState('')
   const [homeDump, setHomeDump] = useState('')
   const [result, setResult] = useState<KickstartContent | null>(null)
@@ -245,6 +246,7 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
             plan={result}
             onSelectTask={onSelectTask}
             onRedo={() => { setResult(null); setWorkDump(''); setHomeDump('') }}
+            onItemComplete={onItemComplete}
           />
         )}
       </div>
