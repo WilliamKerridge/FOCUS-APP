@@ -13,9 +13,12 @@ interface Props {
   onSelectTask?: (task: string) => void
 }
 
-function buildSystemPrompt(streakCount: number): string {
+function buildSystemPrompt(streakCount: number, weeklyTaskCount: number): string {
   const streakContext = streakCount >= 3
-    ? `Streak data: kickstart streak = ${streakCount} days. Reference naturally if relevant — direct tone, not cheerful. e.g. "Nine days of morning kickstarts. Keep it up."`
+    ? `Kickstart streak = ${streakCount} days.`
+    : ''
+  const weeklyContext = weeklyTaskCount > 0
+    ? `Tasks completed this week = ${weeklyTaskCount}.`
     : ''
 
   return `You are analysing William's morning brain dump. The input is split into a WORK section and a HOME section. Return ONLY valid JSON — no markdown, no explanation.
@@ -28,6 +31,7 @@ Shape:
   "home_items": ["anything from the home section that needs attention today — max 3, empty array if none"],
   "flagged_promises": ["any promises due today or overdue"],
   "yesterday_thread": "where to start based on yesterday's next_start (one sentence, or null if none)",
+  "completed_yesterday": ["tasks completed yesterday from the task list — copy titles exactly, empty array if none provided"],
   "overcommitted": false,
   "overcommit_note": null,
   "streak_note": null
@@ -37,10 +41,11 @@ Rules:
 - Be specific — not "work on email" but "reply to [person] about [topic]"
 - must_today: only genuine deadlines from either work or home
 - home_items: practical home/personal things to not forget today — keep separate from work focus
+- completed_yesterday: only include if yesterday's completed tasks are provided in the context — copy titles verbatim
 - overcommitted: true if the combined list is unrealistic for one day
 - overcommit_note: plain warning string if overcommitted, otherwise null
-- streak_note: ${streakCount >= 3 ? `"${streakCount} days of morning kickstarts. Keep it up." — or null if not natural` : 'null'}
-${streakContext}`
+- streak_note: ${(streakCount >= 3 || weeklyTaskCount >= 5) ? `brief momentum note if warranted — direct tone. ${streakContext} ${weeklyContext} e.g. "Nine days straight. ${weeklyTaskCount} tasks done this week." — or null` : 'null'}
+`
 }
 
 export default function MorningKickstart({ user, onBack, onComplete, onSelectTask }: Props) {
@@ -83,8 +88,27 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
     ].filter(Boolean).join('\n\n') || 'No input today.'
 
     try {
-      // Fetch yesterday's EOD handoff and current streak in parallel
-      const [{ data: lastEod }, { data: streakRow }] = await Promise.all([
+      // Date ranges for yesterday and this week
+      const now = new Date()
+      const dayOfWeek = now.getDay()
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+      const weekStart = new Date(now)
+      weekStart.setDate(now.getDate() + mondayOffset)
+      weekStart.setHours(0, 0, 0, 0)
+      const yesterdayStart = new Date(now)
+      yesterdayStart.setDate(now.getDate() - 1)
+      yesterdayStart.setHours(0, 0, 0, 0)
+      const yesterdayEnd = new Date(now)
+      yesterdayEnd.setDate(now.getDate() - 1)
+      yesterdayEnd.setHours(23, 59, 59, 999)
+
+      // Fetch EOD handoff, streak, yesterday's completed tasks, and weekly count in parallel
+      const [
+        { data: lastEod },
+        { data: streakRow },
+        { data: yesterdayTasks },
+        { count: weekTaskCount },
+      ] = await Promise.all([
         supabase
           .from('handoffs')
           .select('content')
@@ -99,16 +123,36 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
           .eq('user_id', user.id)
           .eq('streak_type', 'kickstart')
           .maybeSingle(),
+        supabase
+          .from('tasks')
+          .select('title')
+          .eq('user_id', user.id)
+          .eq('status', 'done')
+          .gte('completed_at', yesterdayStart.toISOString())
+          .lte('completed_at', yesterdayEnd.toISOString()),
+        supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('status', 'done')
+          .gte('completed_at', weekStart.toISOString()),
       ])
+
+      const completedYesterdayTitles = (yesterdayTasks ?? []).map((t: { title: string }) => t.title)
+      const weeklyTaskCount = weekTaskCount ?? 0
 
       const yesterdayThread = lastEod
         ? `\n\nYesterday's handoff — next_start: "${(lastEod.content as EndOfDayContent).next_start}"`
         : ''
 
-      const streakCount = (streakRow as { current_streak: number } | null)?.current_streak ?? 0
-      const systemPrompt = buildSystemPrompt(streakCount)
+      const yesterdayCompletedContext = completedYesterdayTitles.length > 0
+        ? `\n\nCompleted yesterday:\n${completedYesterdayTitles.map((t: string) => `- ${t}`).join('\n')}`
+        : ''
 
-      const userMessage = `${rawInput}${yesterdayThread}`
+      const streakCount = (streakRow as { current_streak: number } | null)?.current_streak ?? 0
+      const systemPrompt = buildSystemPrompt(streakCount, weeklyTaskCount)
+
+      const userMessage = `${rawInput}${yesterdayThread}${yesterdayCompletedContext}`
 
       const rawText = await callClaude(
         [{ role: 'user', content: userMessage }],
@@ -269,6 +313,20 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
               {result.flagged_promises.map((item, i) => (
                 <li key={i} className="text-sm flex gap-2">
                   <span className="text-yellow-400 shrink-0 mt-0.5">•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {(result.completed_yesterday?.length ?? 0) > 0 && (
+          <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Done yesterday</p>
+            <ul className="space-y-1">
+              {result.completed_yesterday.map((item, i) => (
+                <li key={i} className="text-sm flex gap-2">
+                  <span className="text-green-400 shrink-0 mt-0.5">✓</span>
                   {item}
                 </li>
               ))}
