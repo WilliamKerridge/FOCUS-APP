@@ -168,6 +168,8 @@ export default function MorningKickstart({ user, onBack, onSelectTask }: Props) 
   }
 
   if (result && !loading) {
+    const isEmpty = !result.main_focus
+
     return (
       <div className="space-y-4">
         {onBack && (
@@ -178,6 +180,21 @@ export default function MorningKickstart({ user, onBack, onSelectTask }: Props) 
             ← Back
           </button>
         )}
+
+        {isEmpty ? (
+          <div className="px-4 py-5 rounded-lg bg-secondary border border-border space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Something went wrong last time — your kickstart didn't save properly.
+            </p>
+            <button
+              onClick={() => { setResult(null); setWorkDump(''); setHomeDump('') }}
+              className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold text-sm cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+            >
+              Start kickstart
+            </button>
+          </div>
+        ) : (
+          <>
         {result.overcommitted && result.overcommit_note && (
           <div className="px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm">
             ⚠ {result.overcommit_note}
@@ -263,10 +280,12 @@ export default function MorningKickstart({ user, onBack, onSelectTask }: Props) 
 
         <button
           onClick={() => { setResult(null); setWorkDump(''); setHomeDump('') }}
-          className="text-xs text-muted-foreground hover:text-foreground underline cursor-pointer"
+          className="w-full py-3 rounded-lg bg-secondary border border-border text-sm text-muted-foreground hover:text-foreground cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
         >
           Redo kickstart
         </button>
+          </>
+        )}
       </div>
     )
   }
