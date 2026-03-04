@@ -40,14 +40,8 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   if (view === 'handoff') {
     return (
       <div className="space-y-4 max-w-lg">
-        <button
-          onClick={() => setView('work')}
-          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
-        >
-          ← Back
-        </button>
         <h2 className="text-lg font-bold">End of Day</h2>
-        <EndOfDayHandoff user={user} onSwitchToTransition={onSwitchToTransition} />
+        <EndOfDayHandoff user={user} onBack={() => setView('work')} onSwitchToTransition={onSwitchToTransition} />
       </div>
     )
   }

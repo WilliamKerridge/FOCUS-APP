@@ -17,19 +17,19 @@ interface Props {
 
 export default function WorkMode({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<WorkView>('home')
+  const [selectedTask, setSelectedTask] = useState<string | undefined>()
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
+
+  function handleSelectTask(task: string) {
+    setSelectedTask(task)
+    setView('home')
+  }
 
   if (view === 'kickstart') {
     return (
       <div className="space-y-4">
-        <button
-          onClick={() => setView('home')}
-          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
-        >
-          ← Back
-        </button>
         <h2 className="text-lg font-bold">Morning Kickstart</h2>
-        <MorningKickstart user={user} />
+        <MorningKickstart user={user} onBack={() => setView('home')} onSelectTask={handleSelectTask} />
       </div>
     )
   }
@@ -37,14 +37,8 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
   if (view === 'handoff') {
     return (
       <div className="space-y-4">
-        <button
-          onClick={() => setView('home')}
-          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
-        >
-          ← Back
-        </button>
         <h2 className="text-lg font-bold">End of Day</h2>
-        <EndOfDayHandoff user={user} onSwitchToTransition={onSwitchToTransition} />
+        <EndOfDayHandoff user={user} onBack={() => setView('home')} onSwitchToTransition={onSwitchToTransition} />
       </div>
     )
   }
@@ -82,7 +76,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
         <ReEntryPrompt user={user} />
         <div className="mt-4">
-          <SessionPanel user={user} />
+          <SessionPanel user={user} initialTask={selectedTask} />
         </div>
       </div>
     </div>

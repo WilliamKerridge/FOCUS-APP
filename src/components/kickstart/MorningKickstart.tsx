@@ -8,6 +8,8 @@ import type { KickstartContent, EndOfDayContent, Handoff } from '@/types'
 
 interface Props {
   user: User
+  onBack?: () => void
+  onSelectTask?: (task: string) => void
 }
 
 function buildSystemPrompt(streakCount: number): string {
@@ -40,7 +42,7 @@ Rules:
 ${streakContext}`
 }
 
-export default function MorningKickstart({ user }: Props) {
+export default function MorningKickstart({ user, onBack, onSelectTask }: Props) {
   const [workDump, setWorkDump] = useState('')
   const [homeDump, setHomeDump] = useState('')
   const [result, setResult] = useState<KickstartContent | null>(null)
@@ -168,14 +170,27 @@ export default function MorningKickstart({ user }: Props) {
   if (result && !loading) {
     return (
       <div className="space-y-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+          >
+            ← Back
+          </button>
+        )}
         {result.overcommitted && result.overcommit_note && (
           <div className="px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm">
             ⚠ {result.overcommit_note}
           </div>
         )}
 
-        <div className="px-4 py-4 rounded-lg bg-primary/10 border border-primary/30">
-          <p className="text-xs text-primary uppercase tracking-wider font-medium mb-1">Focus today</p>
+        <div
+          className={`px-4 py-4 rounded-lg bg-primary/10 border border-primary/30 ${onSelectTask ? 'cursor-pointer hover:bg-primary/20 transition-colors' : ''}`}
+          onClick={() => onSelectTask?.(result.main_focus)}
+        >
+          <p className="text-xs text-primary uppercase tracking-wider font-medium mb-1">
+            Focus today{onSelectTask ? ' — tap to focus' : ''}
+          </p>
           <p className="font-semibold text-lg leading-snug">{result.main_focus}</p>
         </div>
 
@@ -258,6 +273,14 @@ export default function MorningKickstart({ user }: Props) {
 
   return (
     <div className="space-y-5">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+        >
+          ← Back
+        </button>
+      )}
       <p className="text-muted-foreground text-sm">What's on your mind? Dump everything.</p>
 
       <div className="space-y-1.5">

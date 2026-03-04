@@ -7,6 +7,7 @@ import type { EndOfDayContent } from '@/types'
 
 interface Props {
   user: User
+  onBack?: () => void
   onSwitchToTransition?: () => void
 }
 
@@ -23,7 +24,7 @@ Shape:
 
 Be direct. next_start must be specific: not "continue X" but "open [thing] and do [specific step]".`
 
-export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
+export default function EndOfDayHandoff({ user, onBack, onSwitchToTransition }: Props) {
   const [doneToday, setDoneToday] = useState('')
   const [unfinished, setUnfinished] = useState('')
   const [nextStart, setNextStart] = useState('')
@@ -100,6 +101,14 @@ export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
   if (result) {
     return (
       <div className="space-y-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+          >
+            ← Back
+          </button>
+        )}
         {result.parking_note && (
           <div className="px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-sm">
             ⚠ {result.parking_note}
@@ -156,6 +165,14 @@ export default function EndOfDayHandoff({ user, onSwitchToTransition }: Props) {
 
   return (
     <div className="space-y-4">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+        >
+          ← Back
+        </button>
+      )}
       <p className="text-muted-foreground text-sm">Park it cleanly so tomorrow starts fast.</p>
 
       <div className="space-y-3">
