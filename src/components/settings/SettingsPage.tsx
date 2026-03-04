@@ -112,7 +112,7 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
 
         <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Your FOCUS address</p>
-          <p className="text-sm font-mono select-all">add@[your-resend-domain]</p>
+          <p className="text-sm font-mono select-all">focus@zenmie.resend.app</p>
           <p className="text-xs text-muted-foreground mt-2">
             Emails from your personal addresses below are saved as Home tasks. Everything else is Work.
           </p>
