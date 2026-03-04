@@ -126,26 +126,35 @@ No preamble. Return structured output only. [Feature-specific instructions follo
 
 ## Phase Awareness
 
-We are currently in **Phase 1**. Do not build Phase 2+ features.
+We are currently in **Phase 2 (complete)**. Beginning Phase 3.
 
-**Phase 1 scope:**
+**Phase 1 — Complete:**
 - Project scaffold with auth
 - Three mode buttons (Work / Transition / Home)
-- Morning kickstart flow
-- End-of-day handoff
-- Basic streak counter (kickstart streak only in Phase 1)
-- Notifications via Apple Reminders + Google Calendar MCP (not PWA)
+- Morning kickstart flow (brain dump → Claude → sorted plan card)
+- End-of-day handoff (park work, set tomorrow's start)
+- Kickstart streak counter (flame icon)
+- Notifications via Apple Reminders + Google Calendar MCP
 
-**Not in Phase 1 — do not build yet:**
-- Promises system (Phase 2)
-- Re-entry prompt (Phase 2)
-- Focus sessions (Phase 2)
-- Email Drop Zone (Phase 2)
-- PWA / Web Push (Phase 2)
-- Claire quality time layer (Phase 2)
-- Transition ritual notification (Phase 2)
+**Phase 2 — Complete:**
+- Responsive layout: MobileLayout / DesktopLayout (768px breakpoint)
+- Desktop Work mode: two-column layout (plan left, focus right)
+- Focus sessions: `SessionPanel` (reusable), `SessionCloseModal`, `AbandonedSessionBanner`, `ReEntryPrompt`
+  - Claude generates `start_context` on start (falls back to raw topic if unavailable)
+  - Auto-completion fires `SessionCloseModal` when `elapsedSeconds >= plannedSeconds`
+  - Abandoned session detection on app load (sessions with no `ended_at` from before today)
+  - "Where was I?" re-entry prompt with two-line Claude output
+  - Custom duration (25–120 min cap)
+- Email Drop Zone (paste email → Claude extracts → confirm → save to tasks)
+- Email forwarding via Resend webhook → `email_inbox` table → review screen
+- Settings: forwarding address + personal emails config
+- Unit tests: Vitest + @testing-library/react (82 tests across 7 files)
 
-If a user request would require building a Phase 2 feature, say so clearly and suggest the Phase 1 equivalent if one exists.
+**Phase 3 — Next:**
+- Promises system (promises table, capture, surface in kickstart)
+- Claire quality time layer (Section 19 of spec)
+- Web Push / PWA notifications
+- Transition ritual notification
 
 ---
 
@@ -167,6 +176,7 @@ Example of incorrect tone: `"Great news! Here's your focus for today: You should
 ## Before Every Commit
 
 - [ ] TypeScript compiles with no errors (`tsc --noEmit`)
+- [ ] All tests pass (`npm test`)
 - [ ] No `console.log` left in production code (use `console.error` for genuine errors only)
 - [ ] No hardcoded secrets or API keys
 - [ ] RLS is enabled on any new table

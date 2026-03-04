@@ -4,7 +4,7 @@
 
 Focus sessions are declared blocks of deep work. The user states what they are working on, for how long, and what type of work it is. FOCUS holds them to it — gently but firmly — and captures a handoff at the end so re-entry is instant next time.
 
-**This is a Phase 2 feature.** Do not build it during Phase 1.
+**Status: Complete (Phase 2).** Built and live in production.
 
 ---
 
@@ -159,3 +159,31 @@ Next action: [the specific physical next step]
 - **Focus session at end of day**: If William starts a session at 5:30pm, the transition ritual notification (4:00pm) has already fired. No conflict.
 - **Claude unavailable at session start**: Allow the session to start without the `start_context`. Save the raw topic. On close, Claude processes the `end_context` as normal.
 - **Session close fields left empty**: Save `end_context = null`. The re-entry prompt will work with the morning kickstart context instead.
+
+---
+
+## Implementation Notes (Phase 2)
+
+### Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `SessionPanel` | `src/components/focus/SessionPanel.tsx` | Reusable self-contained session UI — embedded in WorkDesktop (desktop), WorkMode (mobile), HomeMode |
+| `SessionCloseModal` | `src/components/desktop/SessionCloseModal.tsx` | Enforced close flow. `autoTriggered` prop skips early-exit warning when fired at natural completion |
+| `AbandonedSessionBanner` | `src/components/focus/AbandonedSessionBanner.tsx` | Yellow banner shown at top of Work mode when an open session from a previous day is detected |
+| `ReEntryPrompt` | `src/components/focus/ReEntryPrompt.tsx` | "Where was I?" button — fetches `end_context` + `main_focus`, calls Claude for two-line re-orientation |
+| `FocusPanel` | `src/components/desktop/FocusPanel.tsx` | Thin wrapper used on desktop: streak display + "Now working on" card + SessionPanel |
+
+### Hooks
+
+| Hook | Location | Purpose |
+|------|----------|---------|
+| `useFocusSession` | `src/hooks/useFocusSession.ts` | Active session state, timer, start/end/closeAbandoned, abandoned session detection |
+| `useReEntryContext` | `src/hooks/useReEntryContext.ts` | Fetches `end_context` from `focus_sessions` + `main_focus` from `handoffs` on demand |
+
+### Spec deviations / known gaps
+
+- **No mode suppression during sessions**: The spec says to suppress navigation while a session is active. Not yet implemented — session UI coexists with mode buttons.
+- **Transition ritual delay**: The spec says to delay the 4pm notification if a session is active. Not yet built (notifications not implemented as Push yet).
+- **Re-entry uses `tasks` table**: The spec says the re-entry prompt also uses any task marked in-progress from `tasks`. Currently only uses `end_context` + `main_focus`.
+- **Double `useFocusSession` on desktop**: WorkDesktop and SessionPanel each call `useFocusSession` independently (two Supabase fetches on mount). Accepted tech debt — fix by lifting state if performance becomes a concern.
