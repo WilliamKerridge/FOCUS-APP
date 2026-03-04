@@ -7,9 +7,11 @@ import SessionPanel from '@/components/focus/SessionPanel'
 interface Props {
   user: User
   activeTask: string | null
+  activeTaskId?: string
+  onLinkedTaskDone?: (id: string) => void
 }
 
-export default function FocusPanel({ user, activeTask }: Props) {
+export default function FocusPanel({ user, activeTask, activeTaskId, onLinkedTaskDone }: Props) {
   const streak = useStreak(user, 'kickstart')
 
   return (
@@ -35,7 +37,12 @@ export default function FocusPanel({ user, activeTask }: Props) {
         )}
       </div>
 
-      <SessionPanel user={user} initialTask={activeTask ?? undefined} />
+      <SessionPanel
+        user={user}
+        initialTask={activeTask ?? undefined}
+        linkedTaskId={activeTaskId}
+        onLinkedTaskDone={onLinkedTaskDone}
+      />
     </div>
   )
 }

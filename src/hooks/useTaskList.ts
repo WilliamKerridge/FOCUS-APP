@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import { getToday } from '@/lib/utils'
 
 export interface Task {
   id: string
@@ -12,10 +13,12 @@ export interface Task {
   due_date: string | null
   source: string | null
   created_at: string
+  completed_at: string | null
 }
 
 interface UseTaskListResult {
-  tasks: Task[]
+  openTasks: Task[]
+  completedTasks: Task[]
   loading: boolean
   error: string | null
   markDone: (id: string) => Promise<void>
@@ -26,54 +29,79 @@ export function useTaskList(
   user: User | null,
   contexts: string[]
 ): UseTaskListResult {
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [openTasks, setOpenTasks] = useState<Task[]>([])
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [fetchCount, setFetchCount] = useState(0)
 
   useEffect(() => {
     if (!user || contexts.length === 0) {
-      setTasks([])
+      setOpenTasks([])
+      setCompletedTasks([])
       setLoading(false)
       return
     }
 
     let cancelled = false
     setLoading(true)
+    const today = getToday()
 
-    supabase
-      .from('tasks')
-      .select('id, title, context, priority, status, waiting_for_person, due_date, source, created_at')
-      .eq('user_id', user.id)
-      .eq('status', 'open')
-      .in('context', contexts)
-      .order('priority', { ascending: true })
-      .order('created_at', { ascending: true })
-      .then(({ data, error: dbError }) => {
-        if (cancelled) return
-        if (dbError) {
-          setError('Could not load tasks — try refreshing.')
-          setLoading(false)
-          return
-        }
-        setTasks((data ?? []) as Task[])
+    Promise.all([
+      supabase
+        .from('tasks')
+        .select('id, title, context, priority, status, waiting_for_person, due_date, source, created_at, completed_at')
+        .eq('user_id', user.id)
+        .eq('status', 'open')
+        .in('context', contexts)
+        .order('priority', { ascending: true })
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('tasks')
+        .select('id, title, context, priority, status, waiting_for_person, due_date, source, created_at, completed_at')
+        .eq('user_id', user.id)
+        .eq('status', 'done')
+        .in('context', contexts)
+        .gte('completed_at', `${today}T00:00:00Z`)
+        .order('completed_at', { ascending: false }),
+    ]).then(([openRes, doneRes]) => {
+      if (cancelled) return
+      if (openRes.error || doneRes.error) {
+        setError('Could not load tasks — try refreshing.')
         setLoading(false)
-      })
+        return
+      }
+      setOpenTasks((openRes.data ?? []) as Task[])
+      setCompletedTasks((doneRes.data ?? []) as Task[])
+      setLoading(false)
+    })
 
     return () => { cancelled = true }
   }, [user?.id, fetchCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const markDone = useCallback(async (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id))
+    const now = new Date().toISOString()
+    setOpenTasks(prev => prev.filter(t => t.id !== id))
+    const task = openTasks.find(t => t.id === id) ?? completedTasks.find(t => t.id === id)
+    if (task) {
+      setCompletedTasks(prev => [{ ...task, status: 'done', completed_at: now }, ...prev])
+    }
     const { error: updateError } = await supabase
       .from('tasks')
-      .update({ status: 'done', completed_at: new Date().toISOString() })
+      .update({ status: 'done', completed_at: now })
       .eq('id', id)
     if (updateError) {
       console.error('Failed to mark task done:', updateError)
-      setFetchCount(c => c + 1) // re-fetch to restore if update failed
+      setFetchCount(c => c + 1)
     }
-  }, [])
+  }, [openTasks, completedTasks])
 
-  return { tasks, loading, error, markDone, refresh: () => setFetchCount(c => c + 1) }
+  return {
+    openTasks,
+    completedTasks,
+    loading,
+    error,
+    markDone,
+    refresh: () => setFetchCount(c => c + 1),
+  }
 }

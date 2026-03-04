@@ -14,6 +14,7 @@ import { useFocusSession } from '@/hooks/useFocusSession'
 import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
 import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 import TaskList from '@/components/tasks/TaskList'
+import { useTaskList } from '@/hooks/useTaskList'
 
 interface Props {
   user: User
@@ -24,9 +25,11 @@ type DesktopView = 'work' | 'handoff'
 
 export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [activeTask, setActiveTask] = useState<string | null>(null)
+  const [activeTaskId, setActiveTaskId] = useState<string | undefined>()
   const [view, setView] = useState<DesktopView>('work')
   const [showEmailDrop, setShowEmailDrop] = useState(false)
   const [redoingKickstart, setRedoingKickstart] = useState(false)
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone } = useTaskList(user, ['work', 'waiting_for'])
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
   const { plan, loading: loadingPlan, error: planError, refreshPlan } = useTodayKickstart(user)
   const { items: inboxItems } = useEmailInbox(user)
@@ -86,7 +89,15 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
           </div>
         )}
 
-        <TaskList user={user} contexts={['work', 'waiting_for']} title="Open tasks" />
+        <TaskList
+          openTasks={openTasks}
+          completedTasks={completedTasks}
+          loading={tasksLoading}
+          error={tasksError}
+          selectedTaskId={activeTaskId}
+          onDone={markDone}
+          onSelectForFocus={(id, title) => { setActiveTaskId(id); setActiveTask(title) }}
+        />
 
         {/* Bottom actions */}
         <div className="pt-2 space-y-2">
@@ -116,7 +127,12 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
 
       {/* Right column — doing */}
       <div>
-        <FocusPanel user={user} activeTask={activeTask} />
+        <FocusPanel
+          user={user}
+          activeTask={activeTask}
+          activeTaskId={activeTaskId}
+          onLinkedTaskDone={markDone}
+        />
       </div>
     </div>
     </div>

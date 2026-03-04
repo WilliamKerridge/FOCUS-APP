@@ -8,6 +8,7 @@ import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
 import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 import SessionPanel from '@/components/focus/SessionPanel'
 import TaskList from '@/components/tasks/TaskList'
+import { useTaskList } from '@/hooks/useTaskList'
 
 type WorkView = 'home' | 'kickstart' | 'handoff'
 
@@ -19,7 +20,9 @@ interface Props {
 export default function WorkMode({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<WorkView>('home')
   const [selectedTask, setSelectedTask] = useState<string | undefined>()
+  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>()
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone } = useTaskList(user, ['work', 'waiting_for'])
 
   function handleSelectTask(task: string) {
     setSelectedTask(task)
@@ -73,13 +76,26 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
         </button>
       </div>
 
-      <TaskList user={user} contexts={['work', 'waiting_for']} title="Open tasks" />
+      <TaskList
+        openTasks={openTasks}
+        completedTasks={completedTasks}
+        loading={tasksLoading}
+        error={tasksError}
+        selectedTaskId={selectedTaskId}
+        onDone={markDone}
+        onSelectForFocus={(id, title) => { setSelectedTaskId(id); setSelectedTask(title) }}
+      />
 
       <div className="pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
         <ReEntryPrompt user={user} />
         <div className="mt-4">
-          <SessionPanel user={user} initialTask={selectedTask} />
+          <SessionPanel
+            user={user}
+            initialTask={selectedTask}
+            linkedTaskId={selectedTaskId}
+            onLinkedTaskDone={markDone}
+          />
         </div>
       </div>
     </div>

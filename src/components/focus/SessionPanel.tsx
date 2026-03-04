@@ -10,6 +10,8 @@ import { formatTime } from '@/lib/utils'
 interface Props {
   user: User
   initialTask?: string
+  linkedTaskId?: string
+  onLinkedTaskDone?: (id: string) => void
 }
 
 const SESSION_TYPES: { key: SessionType; label: string }[] = [
@@ -21,7 +23,7 @@ const SESSION_TYPES: { key: SessionType; label: string }[] = [
 const DURATIONS = [25, 45, 60, 90]
 const MAX_DOTS = 4
 
-export default function SessionPanel({ user, initialTask }: Props) {
+export default function SessionPanel({ user, initialTask, linkedTaskId, onLinkedTaskDone }: Props) {
   const {
     activeSession,
     todaySessionCount,
@@ -80,7 +82,11 @@ export default function SessionPanel({ user, initialTask }: Props) {
 
   async function handleClose(endContext: string) {
     const error = await endSession(endContext, isEarlyExit && !autoTriggered)
-    if (error) setSessionError(error)
+    if (error) {
+      setSessionError(error)
+    } else if (linkedTaskId) {
+      onLinkedTaskDone?.(linkedTaskId)
+    }
     setShowCloseModal(false)
     setAutoTriggered(false)
   }

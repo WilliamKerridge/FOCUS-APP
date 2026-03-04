@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import TaskList from '@/components/tasks/TaskList'
+import { useTaskList } from '@/hooks/useTaskList'
 
 interface Props {
   user: User
@@ -12,6 +13,7 @@ export default function HomeMode({ user }: Props) {
   const [capture, setCapture] = useState('')
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone } = useTaskList(user, ['home'])
 
   async function handleCapture(e: React.FormEvent) {
     e.preventDefault()
@@ -61,7 +63,13 @@ export default function HomeMode({ user }: Props) {
         </div>
       </form>
 
-      <TaskList user={user} contexts={['home']} title="Home tasks" />
+      <TaskList
+        openTasks={openTasks}
+        completedTasks={completedTasks}
+        loading={tasksLoading}
+        error={tasksError}
+        onDone={markDone}
+      />
 
       <div className="pt-4 border-t border-border mt-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
