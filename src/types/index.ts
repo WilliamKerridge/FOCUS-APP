@@ -50,6 +50,7 @@ export interface KickstartContent {
   home_items: string[]
   flagged_promises: string[]
   yesterday_thread: string | null
+  completed_yesterday: string[]
   overcommitted: boolean
   overcommit_note: string | null
   streak_note: string | null
