@@ -56,6 +56,15 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
+  const [checked, setChecked] = useState<Set<string>>(new Set())
+
+  function toggleItem(key: string) {
+    setChecked(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -268,12 +277,20 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Must today</p>
             <ul className="space-y-1">
-              {result.must_today.map((item, i) => (
-                <li key={i} className="text-sm flex gap-2">
-                  <span className="text-destructive shrink-0 mt-0.5">•</span>
-                  {item}
-                </li>
-              ))}
+              {result.must_today.map((item, i) => {
+                const key = `must_${i}`
+                const done = checked.has(key)
+                return (
+                  <li
+                    key={i}
+                    onClick={() => toggleItem(key)}
+                    className={`text-sm flex gap-2 cursor-pointer select-none ${done ? 'opacity-40' : ''}`}
+                  >
+                    <span className={`shrink-0 mt-0.5 ${done ? 'text-green-400' : 'text-destructive'}`}>{done ? '✓' : '•'}</span>
+                    <span className={done ? 'line-through' : ''}>{item}</span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
@@ -282,12 +299,20 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">If time</p>
             <ul className="space-y-1">
-              {result.if_time.map((item, i) => (
-                <li key={i} className="text-sm flex gap-2">
-                  <span className="text-muted-foreground shrink-0 mt-0.5">•</span>
-                  {item}
-                </li>
-              ))}
+              {result.if_time.map((item, i) => {
+                const key = `if_${i}`
+                const done = checked.has(key)
+                return (
+                  <li
+                    key={i}
+                    onClick={() => toggleItem(key)}
+                    className={`text-sm flex gap-2 cursor-pointer select-none ${done ? 'opacity-40' : ''}`}
+                  >
+                    <span className={`shrink-0 mt-0.5 ${done ? 'text-green-400' : 'text-muted-foreground'}`}>{done ? '✓' : '•'}</span>
+                    <span className={done ? 'line-through' : ''}>{item}</span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
@@ -296,12 +321,20 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
           <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Home today</p>
             <ul className="space-y-1">
-              {result.home_items.map((item, i) => (
-                <li key={i} className="text-sm flex gap-2">
-                  <span className="text-blue-400 shrink-0 mt-0.5">•</span>
-                  {item}
-                </li>
-              ))}
+              {result.home_items.map((item, i) => {
+                const key = `home_${i}`
+                const done = checked.has(key)
+                return (
+                  <li
+                    key={i}
+                    onClick={() => toggleItem(key)}
+                    className={`text-sm flex gap-2 cursor-pointer select-none ${done ? 'opacity-40' : ''}`}
+                  >
+                    <span className={`shrink-0 mt-0.5 ${done ? 'text-green-400' : 'text-blue-400'}`}>{done ? '✓' : '•'}</span>
+                    <span className={done ? 'line-through' : ''}>{item}</span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         )}
