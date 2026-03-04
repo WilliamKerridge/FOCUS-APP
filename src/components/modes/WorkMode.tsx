@@ -7,6 +7,7 @@ import { useFocusSession } from '@/hooks/useFocusSession'
 import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
 import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 import SessionPanel from '@/components/focus/SessionPanel'
+import TaskList from '@/components/tasks/TaskList'
 
 type WorkView = 'home' | 'kickstart' | 'handoff'
 
@@ -71,6 +72,8 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
           <p className="text-sm text-muted-foreground mt-0.5">Park it, set tomorrow's start</p>
         </button>
       </div>
+
+      <TaskList user={user} contexts={['work', 'waiting_for']} title="Open tasks" />
 
       <div className="pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>

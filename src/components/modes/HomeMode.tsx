@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
+import TaskList from '@/components/tasks/TaskList'
 
 interface Props {
   user: User
@@ -60,11 +61,7 @@ export default function HomeMode({ user }: Props) {
         </div>
       </form>
 
-      <div className="px-4 py-4 rounded-xl bg-secondary/50 border border-border space-y-2">
-        <p className="text-sm text-muted-foreground">
-          Promise tracker, presence check, and shared visibility with Claire coming in Phase 2.
-        </p>
-      </div>
+      <TaskList user={user} contexts={['home']} title="Home tasks" />
 
       <div className="pt-4 border-t border-border mt-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>

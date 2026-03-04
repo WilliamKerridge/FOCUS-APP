@@ -13,6 +13,7 @@ import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
 import { useFocusSession } from '@/hooks/useFocusSession'
 import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
 import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
+import TaskList from '@/components/tasks/TaskList'
 
 interface Props {
   user: User
@@ -84,6 +85,8 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             />
           </div>
         )}
+
+        <TaskList user={user} contexts={['work', 'waiting_for']} title="Open tasks" />
 
         {/* Bottom actions */}
         <div className="pt-2 space-y-2">
