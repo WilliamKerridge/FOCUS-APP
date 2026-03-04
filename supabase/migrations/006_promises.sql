@@ -16,4 +16,8 @@ alter table public.promises enable row level security;
 
 create policy "promises: own rows only"
   on public.promises for all
-  using (user_id = auth.uid());
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+create index promises_user_status on public.promises (user_id, status);
+create index promises_user_due on public.promises (user_id, due_date);
