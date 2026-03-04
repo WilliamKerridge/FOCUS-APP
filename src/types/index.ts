@@ -138,3 +138,15 @@ export interface EmailInboxItem {
   reviewed: boolean
   created_at: string
 }
+
+export interface UserPromise {
+  id: string
+  user_id: string
+  title: string
+  made_to: string | null
+  context: 'work' | 'home'
+  due_date: string        // 'YYYY-MM-DD'
+  status: 'active' | 'completed' | 'archived'
+  completed_at: string | null
+  created_at: string
+}
