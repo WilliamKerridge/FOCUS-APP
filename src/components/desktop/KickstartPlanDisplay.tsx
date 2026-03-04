@@ -5,9 +5,10 @@ interface Props {
   plan: KickstartContent
   activeTask: string | null
   onSelectTask: (task: string) => void
+  onRedo?: () => void
 }
 
-export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask }: Props) {
+export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo }: Props) {
   const isActive = (item: string) => item === activeTask
 
   const taskClass = (item: string) =>
@@ -83,6 +84,14 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask }:
             ))}
           </ul>
         </div>
+      )}
+      {onRedo && (
+        <button
+          onClick={onRedo}
+          className="w-full py-2.5 rounded-lg bg-secondary border border-border text-xs text-muted-foreground hover:text-foreground cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+        >
+          Redo kickstart
+        </button>
       )}
     </div>
   )

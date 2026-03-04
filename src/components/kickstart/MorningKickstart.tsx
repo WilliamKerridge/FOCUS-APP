@@ -9,6 +9,7 @@ import type { KickstartContent, EndOfDayContent, Handoff } from '@/types'
 interface Props {
   user: User
   onBack?: () => void
+  onComplete?: () => void
   onSelectTask?: (task: string) => void
 }
 
@@ -42,7 +43,7 @@ Rules:
 ${streakContext}`
 }
 
-export default function MorningKickstart({ user, onBack, onSelectTask }: Props) {
+export default function MorningKickstart({ user, onBack, onComplete, onSelectTask }: Props) {
   const [workDump, setWorkDump] = useState('')
   const [homeDump, setHomeDump] = useState('')
   const [result, setResult] = useState<KickstartContent | null>(null)
@@ -139,6 +140,7 @@ export default function MorningKickstart({ user, onBack, onSelectTask }: Props) 
       }
 
       await updateStreak(user.id, 'kickstart')
+      onComplete?.()
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       console.error('Kickstart error:', message)

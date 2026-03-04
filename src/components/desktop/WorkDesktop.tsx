@@ -25,8 +25,9 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [activeTask, setActiveTask] = useState<string | null>(null)
   const [view, setView] = useState<DesktopView>('work')
   const [showEmailDrop, setShowEmailDrop] = useState(false)
+  const [redoingKickstart, setRedoingKickstart] = useState(false)
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
-  const { plan, loading: loadingPlan, error: planError } = useTodayKickstart(user)
+  const { plan, loading: loadingPlan, error: planError, refreshPlan } = useTodayKickstart(user)
   const { items: inboxItems } = useEmailInbox(user)
   const inboxCount = inboxItems.length
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
@@ -65,16 +66,22 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             <div className="h-16 rounded-lg bg-secondary" />
             <div className="h-16 rounded-lg bg-secondary" />
           </div>
-        ) : plan ? (
+        ) : plan?.main_focus && !redoingKickstart ? (
           <KickstartPlanDisplay
             plan={plan}
             activeTask={activeTask}
             onSelectTask={setActiveTask}
+            onRedo={() => setRedoingKickstart(true)}
           />
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">No kickstart yet today.</p>
-            <MorningKickstart user={user} />
+            {plan && !plan.main_focus && !redoingKickstart && (
+              <p className="text-sm text-muted-foreground">Your kickstart didn't save properly — redo it below.</p>
+            )}
+            <MorningKickstart
+              user={user}
+              onComplete={() => { setRedoingKickstart(false); refreshPlan() }}
+            />
           </div>
         )}
 

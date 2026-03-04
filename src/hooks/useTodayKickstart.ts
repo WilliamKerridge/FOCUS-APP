@@ -8,12 +8,14 @@ interface TodayKickstartResult {
   plan: KickstartContent | null
   loading: boolean
   error: string | null
+  refreshPlan: () => void
 }
 
 export function useTodayKickstart(user: User | null): TodayKickstartResult {
   const [plan, setPlan] = useState<KickstartContent | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fetchCount, setFetchCount] = useState(0)
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
@@ -35,14 +37,12 @@ export function useTodayKickstart(user: User | null): TodayKickstartResult {
           setLoading(false)
           return
         }
-        if (data) {
-          setPlan(data.content as KickstartContent)
-        }
+        setPlan(data ? (data.content as KickstartContent) : null)
         setLoading(false)
       })
 
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, fetchCount])
 
-  return { plan, loading, error }
+  return { plan, loading, error, refreshPlan: () => setFetchCount(c => c + 1) }
 }
