@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { FocusSession } from '@/types'
 
@@ -20,11 +20,11 @@ const fakeUser = { id: 'user-1' } as User
 
 const baseHookState = {
   activeSession: null as FocusSession | null,
-  abandonedSession: null,
+  abandonedSession: null as FocusSession | null,
   todaySessionCount: 0,
   elapsedSeconds: 0,
   loading: false,
-  loadError: null,
+  loadError: null as string | null,
   startSession: mockStartSession,
   endSession: mockEndSession,
   closeAbandoned: vi.fn(),
@@ -150,7 +150,8 @@ describe('SessionPanel — active session', () => {
     ended_at: null,
     actual_duration_mins: null,
     end_context: null,
-    exited_early: null,
+    exited_early: false,
+    created_at: '',
   }
 
   beforeEach(() => {
@@ -209,7 +210,8 @@ describe('SessionPanel — auto-completion', () => {
     ended_at: null,
     actual_duration_mins: null,
     end_context: null,
-    exited_early: null,
+    exited_early: false,
+    created_at: '',
   }
 
   it('opens close modal automatically when elapsed >= planned', () => {

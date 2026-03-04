@@ -15,7 +15,8 @@ const session: FocusSession = {
   ended_at: null,
   actual_duration_mins: null,
   end_context: null,
-  exited_early: null,
+  exited_early: false,
+  created_at: '',
 }
 
 describe('AbandonedSessionBanner', () => {

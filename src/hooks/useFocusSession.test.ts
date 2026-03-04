@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
 // --- hoisted mocks ---
@@ -28,7 +28,8 @@ const openSession: FocusSession = {
   ended_at: null,
   actual_duration_mins: null,
   end_context: null,
-  exited_early: null,
+  exited_early: false,
+  created_at: '',
 }
 
 const closedSession: FocusSession = { ...openSession, ended_at: new Date().toISOString(), actual_duration_mins: 25 }
