@@ -9,9 +9,10 @@ interface Props {
   activeTask: string | null
   activeTaskId?: string
   onLinkedTaskDone?: (id: string) => void
+  onSessionDone?: (title: string) => void
 }
 
-export default function FocusPanel({ user, activeTask, activeTaskId, onLinkedTaskDone }: Props) {
+export default function FocusPanel({ user, activeTask, activeTaskId, onLinkedTaskDone, onSessionDone }: Props) {
   const streak = useStreak(user, 'kickstart')
 
   return (
@@ -42,6 +43,7 @@ export default function FocusPanel({ user, activeTask, activeTaskId, onLinkedTas
         initialTask={activeTask ?? undefined}
         linkedTaskId={activeTaskId}
         onLinkedTaskDone={onLinkedTaskDone}
+        onSessionDone={onSessionDone}
       />
     </div>
   )

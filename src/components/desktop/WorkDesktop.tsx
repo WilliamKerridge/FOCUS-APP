@@ -158,6 +158,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
           activeTask={activeTask}
           activeTaskId={activeTaskId}
           onLinkedTaskDone={markDone}
+          onSessionDone={(title) => createCompletedTask(title, 'work', 'session')}
         />
       </div>
     </div>

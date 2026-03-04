@@ -12,6 +12,7 @@ interface Props {
   initialTask?: string
   linkedTaskId?: string
   onLinkedTaskDone?: (id: string) => void
+  onSessionDone?: (title: string) => void
 }
 
 const SESSION_TYPES: { key: SessionType; label: string }[] = [
@@ -23,7 +24,7 @@ const SESSION_TYPES: { key: SessionType; label: string }[] = [
 const DURATIONS = [25, 45, 60, 90]
 const MAX_DOTS = 4
 
-export default function SessionPanel({ user, initialTask, linkedTaskId, onLinkedTaskDone }: Props) {
+export default function SessionPanel({ user, initialTask, linkedTaskId, onLinkedTaskDone, onSessionDone }: Props) {
   const {
     activeSession,
     todaySessionCount,
@@ -81,11 +82,14 @@ export default function SessionPanel({ user, initialTask, linkedTaskId, onLinked
   }
 
   async function handleClose(endContext: string) {
+    const sessionTitle = activeSession?.start_context ?? topic
     const error = await endSession(endContext, isEarlyExit && !autoTriggered)
     if (error) {
       setSessionError(error)
     } else if (linkedTaskId) {
       onLinkedTaskDone?.(linkedTaskId)
+    } else if (sessionTitle) {
+      onSessionDone?.(sessionTitle)
     }
     setShowCloseModal(false)
     setAutoTriggered(false)

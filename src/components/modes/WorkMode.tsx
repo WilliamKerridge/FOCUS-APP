@@ -10,8 +10,9 @@ import SessionPanel from '@/components/focus/SessionPanel'
 import TaskList from '@/components/tasks/TaskList'
 import { useTaskList } from '@/hooks/useTaskList'
 import ReviewScreen from '@/components/review/ReviewScreen'
+import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
 
-type WorkView = 'home' | 'kickstart' | 'handoff' | 'review'
+type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email'
 
 interface Props {
   user: User
@@ -44,6 +45,14 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
       <div className="space-y-4">
         <h2 className="text-lg font-bold">End of Day</h2>
         <EndOfDayHandoff user={user} onBack={() => setView('home')} onSwitchToTransition={onSwitchToTransition} />
+      </div>
+    )
+  }
+
+  if (view === 'email') {
+    return (
+      <div className="space-y-4">
+        <EmailDropOverlay user={user} onClose={() => setView('home')} />
       </div>
     )
   }
@@ -100,6 +109,14 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
           <p className="font-semibold">Weekly Review</p>
           <p className="text-sm text-muted-foreground mt-0.5">Tasks completed this week</p>
         </button>
+
+        <button
+          onClick={() => setView('email')}
+          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
+        >
+          <p className="font-semibold">Email</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Process or paste an email</p>
+        </button>
       </div>
 
       <TaskList
@@ -121,6 +138,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
             initialTask={selectedTask}
             linkedTaskId={selectedTaskId}
             onLinkedTaskDone={markDone}
+            onSessionDone={(title) => createCompletedTask(title, 'work', 'session')}
           />
         </div>
       </div>

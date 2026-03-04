@@ -22,7 +22,7 @@ interface UseTaskListResult {
   loading: boolean
   error: string | null
   markDone: (id: string) => Promise<void>
-  createCompletedTask: (title: string, context: 'work' | 'home') => Promise<void>
+  createCompletedTask: (title: string, context: 'work' | 'home', source?: string) => Promise<void>
   refresh: () => void
 }
 
@@ -97,11 +97,11 @@ export function useTaskList(
     }
   }, [openTasks, completedTasks])
 
-  const createCompletedTask = useCallback(async (title: string, context: 'work' | 'home') => {
+  const createCompletedTask = useCallback(async (title: string, context: 'work' | 'home', source?: string) => {
     const now = new Date().toISOString()
     const { data, error: insertError } = await supabase
       .from('tasks')
-      .insert({ user_id: user!.id, title, context, priority: 0, status: 'done', source: 'kickstart', completed_at: now })
+      .insert({ user_id: user!.id, title, context, priority: 0, status: 'done', source: source ?? 'kickstart', completed_at: now })
       .select('id, title, context, priority, status, waiting_for_person, due_date, source, created_at, completed_at')
       .single()
     if (insertError) { console.error('Failed to create completed task:', insertError); return }
