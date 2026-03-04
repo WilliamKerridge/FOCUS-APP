@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event'
 import type { User } from '@supabase/supabase-js'
 
 const mockCallClaude = vi.fn()
-const mockInsert = vi.fn()
 const mockFrom = vi.fn()
 
 vi.mock('@/lib/claude', () => ({ callClaude: (...args: unknown[]) => mockCallClaude(...args) }))
@@ -88,7 +87,7 @@ describe('EmailDropZone', () => {
     await userEvent.click(screen.getByRole('button', { name: /save all/i }))
 
     await waitFor(() => expect(insertChain.insert).toHaveBeenCalled())
-    const insertArg = insertChain.insert.mock.calls[0][0] as Array<{ source: string; context: string }>
+    const insertArg = (insertChain.insert.mock.calls as unknown[][])[0][0] as Array<{ source: string; context: string }>
     const actionTask = insertArg.find(t => t.context === 'work')
     const waitingTask = insertArg.find(t => t.context === 'waiting_for')
     expect(actionTask?.source).toBe('email_drop')
@@ -112,7 +111,7 @@ describe('EmailDropZone', () => {
     await userEvent.click(screen.getByRole('button', { name: /save all/i }))
 
     await waitFor(() => expect(insertChain.insert).toHaveBeenCalled())
-    const insertArg = insertChain.insert.mock.calls[0][0] as Array<{ context: string }>
+    const insertArg = (insertChain.insert.mock.calls as unknown[][])[0][0] as Array<{ context: string }>
     expect(insertArg.some(t => t.context === 'work')).toBe(false)
     expect(insertArg.some(t => t.context === 'waiting_for')).toBe(true)
   })

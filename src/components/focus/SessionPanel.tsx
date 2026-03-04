@@ -82,7 +82,7 @@ export default function SessionPanel({ user, initialTask, linkedTaskId, onLinked
   }
 
   async function handleClose(endContext: string) {
-    const sessionTitle = activeSession?.start_context ?? topic
+    const sessionTitle = activeSession?.start_context
     const error = await endSession(endContext, isEarlyExit && !autoTriggered)
     if (error) {
       setSessionError(error)

@@ -37,8 +37,9 @@ export default function EmailDropOverlay({ user, onClose }: Props) {
   }
 
   async function handleSkip(id: string) {
+    const isLast = items.length === 1
     await markReviewed(id)
-    if (items.length <= 1) setView('drop')
+    if (isLast) setView('drop')
   }
 
   if (resolvedView === 'inbox' && items.length > 0) {

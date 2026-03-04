@@ -50,11 +50,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
   }
 
   if (view === 'email') {
-    return (
-      <div className="space-y-4">
-        <EmailDropOverlay user={user} onClose={() => setView('home')} />
-      </div>
-    )
+    return <EmailDropOverlay user={user} onClose={() => setView('home')} />
   }
 
   if (view === 'review') {
