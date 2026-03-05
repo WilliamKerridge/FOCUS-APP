@@ -66,6 +66,7 @@ export interface EndOfDayContent {
 
 export interface TransitionContent {
   parking_note: string
+  evening_promises: string[]   // titles of work promises flagged as relevant tonight
   presence_intention: string
 }
 
@@ -148,5 +149,14 @@ export interface UserPromise {
   due_date: string        // 'YYYY-MM-DD'
   status: 'active' | 'completed' | 'archived'
   completed_at: string | null
+  created_at: string
+}
+
+export interface PushSubscription {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
   created_at: string
 }
