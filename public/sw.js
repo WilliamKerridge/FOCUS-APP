@@ -1,7 +1,12 @@
 // public/sw.js
 
 self.addEventListener('push', event => {
-  const data = event.data?.json() ?? {}
+  let data = {}
+  try {
+    data = event.data?.json() ?? {}
+  } catch (_) {
+    data = { title: 'FOCUS', body: event.data?.text() ?? '' }
+  }
   event.waitUntil(
     self.registration.showNotification(data.title ?? 'FOCUS', {
       body: data.body ?? '',
