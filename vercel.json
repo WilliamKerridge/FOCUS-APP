@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/send-transition-notifications",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 17 * * 1-5"
     }
   ]
 }
