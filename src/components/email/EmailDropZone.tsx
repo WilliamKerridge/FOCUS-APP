@@ -127,7 +127,30 @@ export default function EmailDropZone({ user, onDone }: Props) {
       count = actionInserts.length + waitingInserts.length
     }
 
-    // Promises deferred — no promises table yet (Phase 2)
+    const promiseInserts = extraction.promises
+      .filter((_, i) => checkedPromises[i])
+      .map(p => ({
+        user_id: user.id,
+        title: p.title,
+        made_to: p.made_to ?? null,
+        context: 'work' as const,
+        due_date: p.due_date ?? (() => {
+          const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]
+        })(),
+        status: 'active' as const,
+      }))
+
+    if (promiseInserts.length > 0) {
+      const { error: promiseError } = await supabase
+        .from('promises')
+        .insert(promiseInserts)
+      if (promiseError) {
+        console.error('Failed to save promises:', promiseError)
+        setError("Couldn't save promises — try again.")
+        setSaving(false)
+        return
+      }
+    }
 
     setSaving(false)
     setSavedCount(count)
@@ -198,9 +221,7 @@ export default function EmailDropZone({ user, onDone }: Props) {
                 <span className="text-sm">{p.title}{p.made_to ? ` — to ${p.made_to}` : ''}</span>
               </label>
             ))}
-            <p className="text-xs text-muted-foreground mt-1">
-              Promises will be tracked in a future update.
-            </p>
+
           </div>
         )}
 
