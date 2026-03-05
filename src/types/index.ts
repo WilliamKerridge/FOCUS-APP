@@ -152,7 +152,7 @@ export interface UserPromise {
   created_at: string
 }
 
-export interface PushSubscription {
+export interface UserPushSubscription {
   id: string
   user_id: string
   endpoint: string
