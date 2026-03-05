@@ -11,6 +11,7 @@ import MorningKickstart from '@/components/kickstart/MorningKickstart'
 import EndOfDayHandoff from '@/components/handoff/EndOfDayHandoff'
 import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
 import { useFocusSession } from '@/hooks/useFocusSession'
+import { usePromises } from '@/hooks/usePromises'
 import AbandonedSessionBanner from '@/components/focus/AbandonedSessionBanner'
 import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 import TaskList from '@/components/tasks/TaskList'
@@ -36,6 +37,9 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const { items: inboxItems } = useEmailInbox(user)
   const inboxCount = inboxItems.length
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
+  const { promises: workPromises, completePromise: completeWorkPromise } = usePromises(user, 'work')
+  const { promises: homePromises, completePromise: completeHomePromise } = usePromises(user, 'home')
+  const allPromises = [...workPromises, ...homePromises].sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   useEffect(() => {
     if (plan && !activeTask) {
@@ -96,6 +100,14 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             onRedo={() => setRedoingKickstart(true)}
             onItemComplete={createCompletedTask}
             userId={user.id}
+            activePromises={allPromises}
+            onPromiseComplete={async (id) => {
+              if (workPromises.some(p => p.id === id)) {
+                await completeWorkPromise(id)
+              } else {
+                await completeHomePromise(id)
+              }
+            }}
           />
         ) : (
           <div className="space-y-4">

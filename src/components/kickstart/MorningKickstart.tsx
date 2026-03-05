@@ -32,7 +32,6 @@ Shape:
   "must_today": ["genuine hard deadline or commitment from either context — max 3"],
   "if_time": ["nice to do, not critical, from either context — max 3"],
   "home_items": ["anything from the home section that needs attention today — max 3, empty array if none"],
-  "flagged_promises": ["any promises due today or overdue"],
   "yesterday_thread": "where to start based on yesterday's next_start (one sentence, or null if none)",
   "completed_yesterday": ["tasks completed yesterday from the task list — copy titles exactly, empty array if none provided"],
   "overcommitted": false,
