@@ -3,11 +3,13 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+interface PushSubscriptionRow {
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  profiles: { transition_time: string; work_days: string[] }
+}
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number)
@@ -28,9 +30,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
+  if (!process.env.VAPID_SUBJECT || !process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    console.error('send-transition-notifications: VAPID env vars are not set')
+    return res.status(500).json({ error: 'VAPID configuration missing' })
+  }
+
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  )
+
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('send-transition-notifications: Supabase env vars are not set')
+    return res.status(500).json({ error: 'Supabase configuration missing' })
+  }
+
   const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
   const today = new Date().toISOString().split('T')[0]
@@ -43,45 +61,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (error) return res.status(500).json({ error: error.message })
 
-  const { data: doneHandoffs } = await supabase
+  const { data: doneHandoffs, error: handoffsError } = await supabase
     .from('handoffs')
     .select('user_id')
     .eq('type', 'transition')
     .eq('date', today)
 
+  if (handoffsError) {
+    console.error('send-transition-notifications: failed to query handoffs', handoffsError.message)
+    return res.status(500).json({ error: 'Failed to query handoffs' })
+  }
+
   const doneUserIds = new Set((doneHandoffs ?? []).map((h: { user_id: string }) => h.user_id))
 
-  let sent = 0
-  await Promise.allSettled(
-    (subs ?? []).map(async (sub: {
-      user_id: string
-      endpoint: string
-      p256dh: string
-      auth: string
-      profiles: { transition_time: string; work_days: string[] }
-    }) => {
-      const { transition_time, work_days } = sub.profiles
-      if (!work_days.includes(todayDay)) return
-      if (doneUserIds.has(sub.user_id)) return
+  const toSend: Array<{ sub: PushSubscriptionRow; payload: string }> = []
 
-      const transitionMins = timeToMinutes(transition_time)
-      const isFirst = currentMins >= transitionMins && currentMins < transitionMins + 15
-      const isSecond = currentMins >= transitionMins + 30 && currentMins < transitionMins + 45
-      if (!isFirst && !isSecond) return
+  for (const sub of subs ?? []) {
+    const { transition_time, work_days } = (sub as PushSubscriptionRow).profiles
+    if (!work_days.includes(todayDay)) continue
+    if (doneUserIds.has((sub as PushSubscriptionRow).user_id)) continue
 
-      const payload = JSON.stringify(
-        isFirst
-          ? { title: 'Time to transition', body: 'Park your work and head home.', url: '/' }
-          : { title: 'Transition reminder', body: 'Still time to close out the day.', url: '/' }
-      )
+    const transitionMins = timeToMinutes(transition_time)
+    const isFirst = currentMins >= transitionMins && currentMins < transitionMins + 15
+    const isSecond = currentMins >= transitionMins + 30 && currentMins < transitionMins + 45
+    if (!isFirst && !isSecond) continue
 
-      await webpush.sendNotification(
+    const payload = JSON.stringify(
+      isFirst
+        ? { title: 'Time to transition', body: 'Park your work and head home.', url: '/' }
+        : { title: 'Transition reminder', body: 'Still time to close out the day.', url: '/' }
+    )
+    toSend.push({ sub: sub as PushSubscriptionRow, payload })
+  }
+
+  const results = await Promise.allSettled(
+    toSend.map(({ sub, payload }) =>
+      webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         payload
       )
-      sent++
-    })
+    )
   )
+
+  const sent = results.filter(r => r.status === 'fulfilled').length
+  const failed = results.filter(r => r.status === 'rejected')
+  if (failed.length > 0) {
+    console.error(`send-transition-notifications: ${failed.length} notification(s) failed`)
+  }
 
   res.json({ sent, total: subs?.length ?? 0 })
 }

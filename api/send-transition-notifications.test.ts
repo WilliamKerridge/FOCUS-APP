@@ -1,5 +1,5 @@
 // api/send-transition-notifications.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const { mockSendNotification, mockFrom, mockCreateClient } = vi.hoisted(() => {
@@ -37,6 +37,12 @@ beforeEach(() => {
   vi.stubEnv('VAPID_PUBLIC_KEY', 'pub')
   vi.stubEnv('VAPID_PRIVATE_KEY', 'priv')
   vi.stubEnv('VAPID_SUBJECT', 'mailto:test@test.com')
+  vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co')
+  vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role-key')
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('send-transition-notifications', () => {
@@ -47,21 +53,17 @@ describe('send-transition-notifications', () => {
   })
 
   it('sends notification when transition_time matches and today is a work day', async () => {
-    // Set up: user with transition_time matching current UTC time window
-    const now = new Date()
-    const hh = String(now.getUTCHours()).padStart(2, '0')
-    const mm = String(Math.floor(now.getUTCMinutes() / 15) * 15).padStart(2, '0')
-    const transitionTime = `${hh}:${mm}`
-
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const todayDay = days[now.getUTCDay()]
+    // Fix time to 17:00 UTC on a Monday
+    const fixedDate = new Date('2026-03-09T17:00:00Z') // Monday
+    vi.useFakeTimers()
+    vi.setSystemTime(fixedDate)
 
     const subs = [{
       user_id: 'u1',
       endpoint: 'https://example.com/push',
       p256dh: 'key1',
       auth: 'auth1',
-      profiles: { transition_time: transitionTime, work_days: [todayDay] },
+      profiles: { transition_time: '17:00', work_days: ['Mon'] },
     }]
 
     mockFrom.mockImplementation((table: string) => {
@@ -75,26 +77,52 @@ describe('send-transition-notifications', () => {
     const { res, json } = makeRes()
     await handler(makeReq(), res)
     expect(mockSendNotification).toHaveBeenCalledOnce()
+    const payload = JSON.parse(mockSendNotification.mock.calls[0][1] as string)
+    expect(payload.title).toBe('Time to transition')
     expect(json).toHaveBeenCalledWith(expect.objectContaining({ sent: 1 }))
   })
 
-  it('does NOT send notification when today is not a work day for the user', async () => {
-    const now = new Date()
-    const hh = String(now.getUTCHours()).padStart(2, '0')
-    const mm = String(Math.floor(now.getUTCMinutes() / 15) * 15).padStart(2, '0')
-    const transitionTime = `${hh}:${mm}`
-
-    // Give all days EXCEPT today
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const todayDay = days[now.getUTCDay()]
-    const workDays = days.filter(d => d !== todayDay)
+  it('sends second reminder when in the +30min window', async () => {
+    const fixedDate = new Date('2026-03-09T17:30:00Z') // Monday, 30 mins after 17:00
+    vi.useFakeTimers()
+    vi.setSystemTime(fixedDate)
 
     const subs = [{
       user_id: 'u1',
       endpoint: 'https://example.com/push',
       p256dh: 'key1',
       auth: 'auth1',
-      profiles: { transition_time: transitionTime, work_days: workDays },
+      profiles: { transition_time: '17:00', work_days: ['Mon'] },
+    }]
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'push_subscriptions') {
+        return { select: vi.fn(() => Promise.resolve({ data: subs, error: null })) }
+      }
+      return { select: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => Promise.resolve({ data: [], error: null })) })) })) }
+    })
+    mockSendNotification.mockResolvedValue(undefined)
+
+    const { res, json } = makeRes()
+    await handler(makeReq(), res)
+    expect(mockSendNotification).toHaveBeenCalledOnce()
+    const payload = JSON.parse(mockSendNotification.mock.calls[0][1] as string)
+    expect(payload.title).toBe('Transition reminder')
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({ sent: 1 }))
+  })
+
+  it('does NOT send notification when today is not a work day for the user', async () => {
+    // Fix time to 17:00 UTC on a Monday, but work_days excludes Monday
+    const fixedDate = new Date('2026-03-09T17:00:00Z') // Monday
+    vi.useFakeTimers()
+    vi.setSystemTime(fixedDate)
+
+    const subs = [{
+      user_id: 'u1',
+      endpoint: 'https://example.com/push',
+      p256dh: 'key1',
+      auth: 'auth1',
+      profiles: { transition_time: '17:00', work_days: ['Tue', 'Wed', 'Thu', 'Fri'] },
     }]
 
     mockFrom.mockImplementation((table: string) => {
@@ -110,19 +138,17 @@ describe('send-transition-notifications', () => {
   })
 
   it('does NOT send when transition handoff already exists today', async () => {
-    const now = new Date()
-    const hh = String(now.getUTCHours()).padStart(2, '0')
-    const mm = String(Math.floor(now.getUTCMinutes() / 15) * 15).padStart(2, '0')
-    const transitionTime = `${hh}:${mm}`
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    const todayDay = days[now.getUTCDay()]
+    // Fix time to 17:00 UTC on a Monday
+    const fixedDate = new Date('2026-03-09T17:00:00Z') // Monday
+    vi.useFakeTimers()
+    vi.setSystemTime(fixedDate)
 
     const subs = [{
       user_id: 'u1',
       endpoint: 'https://example.com/push',
       p256dh: 'key1',
       auth: 'auth1',
-      profiles: { transition_time: transitionTime, work_days: [todayDay] },
+      profiles: { transition_time: '17:00', work_days: ['Mon'] },
     }]
 
     mockFrom.mockImplementation((table: string) => {
