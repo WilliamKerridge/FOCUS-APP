@@ -36,7 +36,7 @@ export default function PromisesList({ user, context, onBack }: Props) {
     if (!title.trim()) return
     setSaving(true)
     setError(null)
-    const err = await addPromise(title.trim(), madeTo.trim(), dueDate)
+    const err = await addPromise(title.trim(), madeTo.trim() || null, dueDate)
     if (err) {
       setError(err)
     } else {

@@ -62,12 +62,21 @@ describe('PromisesList', () => {
     expect(screen.getByRole('button', { name: /add promise/i })).toBeDisabled()
   })
 
-  it('calls addPromise with title, madeTo and due date on submit', async () => {
+  it('calls addPromise with null madeTo when field is empty', async () => {
     mockAddPromise.mockResolvedValue(null)
     render(<PromisesList user={fakeUser} context="work" onBack={vi.fn()} />)
     await userEvent.type(screen.getByPlaceholderText(/what did you promise/i), 'Reply to Bob')
     await userEvent.click(screen.getByRole('button', { name: /add promise/i }))
-    expect(mockAddPromise).toHaveBeenCalledWith('Reply to Bob', expect.any(String), expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
+    expect(mockAddPromise).toHaveBeenCalledWith('Reply to Bob', null, expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
+  })
+
+  it('calls addPromise with madeTo string when field is filled', async () => {
+    mockAddPromise.mockResolvedValue(null)
+    render(<PromisesList user={fakeUser} context="work" onBack={vi.fn()} />)
+    await userEvent.type(screen.getByPlaceholderText(/what did you promise/i), 'Reply to Bob')
+    await userEvent.type(screen.getByPlaceholderText(/to whom/i), 'Alice')
+    await userEvent.click(screen.getByRole('button', { name: /add promise/i }))
+    expect(mockAddPromise).toHaveBeenCalledWith('Reply to Bob', 'Alice', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
   })
 
   it('clears input after successful add', async () => {
