@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { EmailInboxItem } from '@/types'
+import { supabase } from '@/lib/supabase'
 
 type TaskInsert = {
   user_id: string
@@ -29,6 +30,9 @@ export default function EmailInboxReview({ user, item, onSave, onDone }: Props) 
   )
   const [checkedWaiting, setCheckedWaiting] = useState(
     () => extraction?.waiting_for.map(() => true) ?? []
+  )
+  const [checkedPromises, setCheckedPromises] = useState(
+    () => extraction?.promises.map(() => true) ?? []
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +70,31 @@ export default function EmailInboxReview({ user, item, onSave, onDone }: Props) 
         }))
 
       taskInserts.push(...actionInserts, ...waitingInserts)
+    }
+
+    // Save checked promises to promises table
+    if (extraction && checkedPromises.some(Boolean)) {
+      const promiseInserts = extraction.promises
+        .filter((_, i) => checkedPromises[i])
+        .map(p => ({
+          user_id: user.id,
+          title: p.title,
+          made_to: p.made_to ?? null,
+          context: item.context as 'work' | 'home',
+          due_date: p.due_date ?? (() => {
+            const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]
+          })(),
+          status: 'active' as const,
+        }))
+
+      const { error: promiseError } = await supabase
+        .from('promises')
+        .insert(promiseInserts)
+      if (promiseError) {
+        setError("Couldn't save promises — try again.")
+        setSaving(false)
+        return
+      }
     }
 
     const saveError = await onSave(item.id, taskInserts)
@@ -130,6 +159,23 @@ export default function EmailInboxReview({ user, item, onSave, onDone }: Props) 
                     className="mt-0.5"
                   />
                   <span className="text-sm">{w.person} — {w.title}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {extraction.promises.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Promises you made</p>
+              {extraction.promises.map((p, i) => (
+                <label key={`promise-${i}`} className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checkedPromises[i]}
+                    onChange={e => setCheckedPromises(prev => prev.map((v, j) => j === i ? e.target.checked : v))}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm">{p.title}{p.made_to ? ` — to ${p.made_to}` : ''}</span>
                 </label>
               ))}
             </div>
