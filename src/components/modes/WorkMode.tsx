@@ -11,8 +11,9 @@ import TaskList from '@/components/tasks/TaskList'
 import { useTaskList } from '@/hooks/useTaskList'
 import ReviewScreen from '@/components/review/ReviewScreen'
 import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
+import PromisesList from '@/components/promises/PromisesList'
 
-type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email'
+type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email' | 'promises'
 
 interface Props {
   user: User
@@ -51,6 +52,10 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
 
   if (view === 'email') {
     return <EmailDropOverlay user={user} onClose={() => setView('home')} />
+  }
+
+  if (view === 'promises') {
+    return <PromisesList user={user} context="work" onBack={() => setView('home')} />
   }
 
   if (view === 'review') {
@@ -112,6 +117,14 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
         >
           <p className="font-semibold">Email</p>
           <p className="text-sm text-muted-foreground mt-0.5">Process or paste an email</p>
+        </button>
+
+        <button
+          onClick={() => setView('promises')}
+          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
+        >
+          <p className="font-semibold">Promises</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Commitments you've made</p>
         </button>
       </div>
 
