@@ -9,7 +9,6 @@ vi.mock('@/lib/supabase', () => ({ supabase: { from: mockFrom } }))
 // Mock browser push APIs
 const mockGetSubscription = vi.fn()
 const mockSubscribe = vi.fn()
-const mockUnsubscribe = vi.fn()
 const mockReady = Promise.resolve({
   pushManager: {
     getSubscription: mockGetSubscription,
