@@ -4,12 +4,16 @@ import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import TaskList from '@/components/tasks/TaskList'
 import { useTaskList } from '@/hooks/useTaskList'
+import PromisesList from '@/components/promises/PromisesList'
 
 interface Props {
   user: User
 }
 
+type HomeView = 'home' | 'promises'
+
 export default function HomeMode({ user }: Props) {
+  const [view, setView] = useState<HomeView>('home')
   const [capture, setCapture] = useState('')
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -32,6 +36,10 @@ export default function HomeMode({ user }: Props) {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (view === 'promises') {
+    return <PromisesList user={user} context="home" onBack={() => setView('home')} />
   }
 
   return (
@@ -62,6 +70,16 @@ export default function HomeMode({ user }: Props) {
           </button>
         </div>
       </form>
+
+      <div className="grid gap-3">
+        <button
+          onClick={() => setView('promises')}
+          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
+        >
+          <p className="font-semibold">Promises</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Commitments you've made</p>
+        </button>
+      </div>
 
       <TaskList
         openTasks={openTasks}
