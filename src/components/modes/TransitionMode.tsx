@@ -49,15 +49,17 @@ export default function TransitionMode({ user, onModeChange }: Props) {
       return
     }
     setParkingLoading(true)
+    let note = ''
     try {
-      const note = await callClaude([
+      note = (await callClaude([
         { role: 'user', content: `I'm done with work. Open loops: ${parkingInput.trim()}. Give me a one-line parking confirmation.` },
-      ])
-      advanceFromStep1(note.trim())
+      ])).trim()
     } catch {
-      advanceFromStep1(parkingInput.trim())
+      note = parkingInput.trim()
+    } finally {
+      setParkingLoading(false)
     }
-    setParkingLoading(false)
+    advanceFromStep1(note)
   }
 
   async function handleSave() {
@@ -70,7 +72,7 @@ export default function TransitionMode({ user, onModeChange }: Props) {
       user_id: user.id,
       type: 'transition',
       content: {
-        parking_note: parkingNote || parkingInput,
+        parking_note: parkingNote,
         evening_promises: eveningPromises,
         presence_intention: intention,
       },
@@ -167,10 +169,10 @@ export default function TransitionMode({ user, onModeChange }: Props) {
         <div className="space-y-4">
           <h2 className="text-lg font-bold">Ready to close out</h2>
           <div className="space-y-3 px-4 py-4 rounded-xl bg-secondary border border-border text-sm">
-            {(parkingNote || parkingInput) && (
+            {parkingNote && (
               <p>
                 <span className="text-muted-foreground">Parked: </span>
-                {parkingNote || parkingInput}
+                {parkingNote}
               </p>
             )}
             {promises.filter((_, i) => checkedPromises[i]).length > 0 && (
