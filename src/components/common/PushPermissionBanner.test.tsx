@@ -1,6 +1,6 @@
 // src/components/common/PushPermissionBanner.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { User } from '@supabase/supabase-js'
 
@@ -71,5 +71,18 @@ describe('PushPermissionBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: /not now/i }))
     expect(screen.queryByText(/nudge at transition time/i)).not.toBeInTheDocument()
     expect(localStorage.getItem('push-banner-dismissed')).toBe('1')
+  })
+
+  it('does not render when already dismissed (localStorage pre-populated)', () => {
+    localStorage.setItem('push-banner-dismissed', '1')
+    render(<PushPermissionBanner user={fakeUser} />)
+    expect(screen.queryByText(/nudge at transition time/i)).not.toBeInTheDocument()
+  })
+
+  it('shows error message when subscribe fails', async () => {
+    mockSubscribe.mockResolvedValue('Could not subscribe to notifications')
+    render(<PushPermissionBanner user={fakeUser} />)
+    await userEvent.click(screen.getByRole('button', { name: /allow/i }))
+    await waitFor(() => expect(screen.getByText(/could not subscribe/i)).toBeInTheDocument())
   })
 })

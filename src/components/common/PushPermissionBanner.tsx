@@ -13,13 +13,19 @@ export default function PushPermissionBanner({ user }: Props) {
   const { supported, permission, subscribed, loading, subscribe } = useTransitionReminder(user)
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISSED_KEY) === '1')
   const [subscribing, setSubscribing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (loading || !supported || permission !== 'default' || subscribed || dismissed) return null
 
   async function handleAllow() {
     setSubscribing(true)
-    await subscribe()
-    setSubscribing(false)
+    setError(null)
+    try {
+      const err = await subscribe()
+      if (err) setError(err)
+    } finally {
+      setSubscribing(false)
+    }
   }
 
   function handleDismiss() {
@@ -45,6 +51,7 @@ export default function PushPermissionBanner({ user }: Props) {
           Not now
         </button>
       </div>
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </div>
   )
 }
