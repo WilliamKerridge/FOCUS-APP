@@ -3,5 +3,11 @@
     "api/claude.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/send-transition-notifications",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 }
