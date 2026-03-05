@@ -14,6 +14,7 @@ import WorkDesktop from '@/components/desktop/WorkDesktop'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import MobileLayout from '@/components/layout/MobileLayout'
 import DesktopLayout from '@/components/layout/DesktopLayout'
+import PushPermissionBanner from '@/components/common/PushPermissionBanner'
 import type { Mode } from '@/types'
 
 type AppState = 'loading' | 'auth' | 'onboarding' | 'app'
@@ -43,6 +44,12 @@ export default function App() {
 
     setAppState('app')
   }, [user, authLoading, profile, profileLoading])
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error)
+    }
+  }, [])
 
   async function handleModeChange(newMode: Mode) {
     if (!user || !profile) return
@@ -140,14 +147,19 @@ export default function App() {
             ? <WorkDesktop user={user} onSwitchToTransition={handleSwitchToTransition} />
             : <WorkMode user={user} onSwitchToTransition={handleSwitchToTransition} />
         )}
-        {currentMode === 'transition' && <TransitionMode user={user} />}
+        {currentMode === 'transition' && <TransitionMode user={user} onModeChange={handleModeChange} />}
         {currentMode === 'home' && <HomeMode user={user} />}
       </ErrorBoundary>
     )
 
     const Layout = isDesktop ? DesktopLayout : MobileLayout
 
-    return <Layout header={header} modeSelector={modeSelector} nudge={nudge} content={content} />
+    return (
+      <>
+        <PushPermissionBanner user={user} />
+        <Layout header={header} modeSelector={modeSelector} nudge={nudge} content={content} />
+      </>
+    )
   }
 
   return null
