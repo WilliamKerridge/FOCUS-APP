@@ -25,12 +25,21 @@ export function useTransitionReminder(user: User | null) {
     setSupported(isSupported)
     if (!isSupported) { setLoading(false); return }
     setPermission(Notification.permission)
-    navigator.serviceWorker.ready.then(reg => {
-      reg.pushManager.getSubscription().then(sub => {
-        setSubscribed(sub !== null)
-        setLoading(false)
-      })
-    })
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const reg = await navigator.serviceWorker.ready
+        const sub = await reg.pushManager.getSubscription()
+        if (!cancelled) setSubscribed(sub !== null)
+      } catch {
+        // SW not available or getSubscription failed — leave subscribed=false
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => { cancelled = true }
   }, [user?.id])
 
   const subscribe = useCallback(async (): Promise<string | null> => {
@@ -45,8 +54,9 @@ export function useTransitionReminder(user: User | null) {
       })
       const json = sub.toJSON()
       const keys = json.keys as Record<string, string>
+      if (!json.endpoint) return 'Invalid subscription — missing endpoint'
       const { error } = await supabase.from('push_subscriptions').upsert(
-        { user_id: user.id, endpoint: json.endpoint!, p256dh: keys.p256dh, auth: keys.auth },
+        { user_id: user.id, endpoint: json.endpoint, p256dh: keys.p256dh, auth: keys.auth },
         { onConflict: 'user_id,endpoint' }
       )
       if (error) return "Couldn't save subscription"
@@ -56,7 +66,7 @@ export function useTransitionReminder(user: User | null) {
     } catch {
       return 'Could not subscribe to notifications'
     }
-  }, [user])
+  }, [user?.id])
 
   const unsubscribe = useCallback(async (): Promise<string | null> => {
     if (!user) return 'Not authenticated'
@@ -65,15 +75,16 @@ export function useTransitionReminder(user: User | null) {
       const sub = await reg.pushManager.getSubscription()
       if (sub) {
         await sub.unsubscribe()
-        await supabase.from('push_subscriptions').delete()
+        const { error: deleteError } = await supabase.from('push_subscriptions').delete()
           .eq('user_id', user.id).eq('endpoint', sub.endpoint)
+        if (deleteError) return "Couldn't remove subscription from server"
       }
       setSubscribed(false)
       return null
     } catch {
       return 'Could not unsubscribe'
     }
-  }, [user])
+  }, [user?.id])
 
   return { supported, permission, subscribed, loading, subscribe, unsubscribe }
 }
