@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import { updateStreak } from '@/hooks/useStreak'
+import { usePromises } from '@/hooks/usePromises'
 import type { User } from '@supabase/supabase-js'
 import type { KickstartContent, EndOfDayContent, Handoff } from '@/types'
 import KickstartPlanDisplay from '@/components/desktop/KickstartPlanDisplay'
@@ -58,6 +59,11 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
+
+  // Fetch ALL active promises (both contexts) for kickstart display
+  const { promises: workPromises, completePromise: completeWorkPromise } = usePromises(user, 'work')
+  const { promises: homePromises, completePromise: completeHomePromise } = usePromises(user, 'home')
+  const allPromises = [...workPromises, ...homePromises].sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -151,10 +157,16 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
         ? `\n\nCompleted yesterday:\n${completedYesterdayTitles.map((t: string) => `- ${t}`).join('\n')}`
         : ''
 
+      const promisesContext = allPromises.length > 0
+        ? `\n\nActive promises:\n${allPromises.map(p =>
+            `- "${p.title}"${p.made_to ? ` (to ${p.made_to})` : ''} — due ${p.due_date}${p.context === 'home' ? ' [HOME]' : ''}`
+          ).join('\n')}`
+        : ''
+
       const streakCount = (streakRow as { current_streak: number } | null)?.current_streak ?? 0
       const systemPrompt = buildSystemPrompt(streakCount, weeklyTaskCount)
 
-      const userMessage = `${rawInput}${yesterdayThread}${yesterdayCompletedContext}`
+      const userMessage = `${rawInput}${yesterdayThread}${yesterdayCompletedContext}${promisesContext}`
 
       const rawText = await callClaude(
         [{ role: 'user', content: userMessage }],
@@ -248,6 +260,14 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
             onRedo={() => { setResult(null); setWorkDump(''); setHomeDump('') }}
             onItemComplete={onItemComplete}
             userId={user.id}
+            activePromises={allPromises}
+            onPromiseComplete={async (id) => {
+              if (workPromises.some(p => p.id === id)) {
+                await completeWorkPromise(id)
+              } else {
+                await completeHomePromise(id)
+              }
+            }}
           />
         )}
       </div>

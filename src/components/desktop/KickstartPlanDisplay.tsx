@@ -1,6 +1,6 @@
 // src/components/desktop/KickstartPlanDisplay.tsx
 import { useState } from 'react'
-import type { KickstartContent } from '@/types'
+import type { KickstartContent, UserPromise } from '@/types'
 
 interface Props {
   plan: KickstartContent
@@ -9,9 +9,11 @@ interface Props {
   onRedo?: () => void
   onItemComplete?: (title: string, context: 'work' | 'home') => void
   userId?: string
+  onPromiseComplete?: (id: string) => void
+  activePromises?: UserPromise[]
 }
 
-export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete, userId }: Props) {
+export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete, userId, onPromiseComplete, activePromises }: Props) {
   const storageKey = userId
     ? `kickstart-checked-${userId}-${new Date().toISOString().split('T')[0]}`
     : null
@@ -140,15 +142,23 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         </div>
       )}
 
-      {/* Flagged promises */}
-      {(plan.flagged_promises?.length ?? 0) > 0 && (
+      {/* Active promises */}
+      {(activePromises?.length ?? 0) > 0 && (
         <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Promises due</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Promises</p>
           <ul className="space-y-1">
-            {plan.flagged_promises.map((item, i) => (
-              <li key={i} className="text-sm flex gap-2">
-                <span className="text-yellow-400 shrink-0 mt-0.5">•</span>
-                {item}
+            {activePromises!.map(p => (
+              <li key={p.id} className="text-sm flex gap-2 items-start">
+                <button
+                  onClick={() => onPromiseComplete?.(p.id)}
+                  className="shrink-0 mt-0.5 cursor-pointer w-4 text-left"
+                >
+                  <span className="text-yellow-400">•</span>
+                </button>
+                <span className="flex-1">
+                  {p.title}{p.made_to ? ` — ${p.made_to}` : ''}
+                  <span className="ml-2 text-xs text-muted-foreground">{p.due_date}</span>
+                </span>
               </li>
             ))}
           </ul>
