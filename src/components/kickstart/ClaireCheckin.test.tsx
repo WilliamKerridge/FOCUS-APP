@@ -34,14 +34,14 @@ describe('ClaireCheckin', () => {
   it('shows blocker input when Partially present tapped', () => {
     render(<ClaireCheckin onSave={onSave} onSkip={onSkip} saving={false} />)
     fireEvent.click(screen.getByRole('button', { name: /partially present/i }))
-    expect(screen.getByPlaceholderText(/what got in the way/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/what got in the way/i)).toBeInTheDocument()
   })
 
   it('calls onSave with partial + blocker text on Continue', async () => {
     onSave.mockResolvedValue(null)
     render(<ClaireCheckin onSave={onSave} onSkip={onSkip} saving={false} />)
     fireEvent.click(screen.getByRole('button', { name: /partially present/i }))
-    fireEvent.change(screen.getByPlaceholderText(/what got in the way/i), { target: { value: 'phone' } })
+    fireEvent.change(screen.getByLabelText(/what got in the way/i), { target: { value: 'phone' } })
     fireEvent.click(screen.getByRole('button', { name: /continue/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith('partial', 'phone'))
   })

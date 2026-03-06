@@ -34,11 +34,17 @@ export default function ClaireCheckin({ onSave, onSkip, saving }: Props) {
         </p>
 
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">What got in the way?</p>
+          <label
+            htmlFor="claire-blocker"
+            className="text-sm text-muted-foreground"
+          >
+            What got in the way?
+          </label>
           <textarea
+            id="claire-blocker"
             value={blocker}
             onChange={e => setBlocker(e.target.value)}
-            placeholder="What got in the way?"
+            placeholder="Add a note…"
             rows={3}
             className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none text-base"
             autoFocus
