@@ -7,6 +7,8 @@ import { usePromises } from '@/hooks/usePromises'
 import type { User } from '@supabase/supabase-js'
 import type { KickstartContent, EndOfDayContent, Handoff } from '@/types'
 import KickstartPlanDisplay from '@/components/desktop/KickstartPlanDisplay'
+import { useClaireCheckin } from '@/hooks/useClaireCheckin'
+import ClaireCheckinStep from '@/components/kickstart/ClaireCheckin'
 
 interface Props {
   user: User
@@ -16,7 +18,7 @@ interface Props {
   onItemComplete?: (title: string, context: 'work' | 'home') => void
 }
 
-function buildSystemPrompt(streakCount: number, weeklyTaskCount: number): string {
+function buildSystemPrompt(streakCount: number, weeklyTaskCount: number, claireContext: string | null): string {
   const streakContext = streakCount >= 3
     ? `Kickstart streak = ${streakCount} days.`
     : ''
@@ -47,6 +49,7 @@ Rules:
 - overcommitted: true if the combined list is unrealistic for one day
 - overcommit_note: plain warning string if overcommitted, otherwise null
 - streak_note: ${(streakCount >= 3 || weeklyTaskCount >= 5) ? `brief momentum note if warranted — direct tone. ${streakContext} ${weeklyContext} e.g. "Nine days straight. ${weeklyTaskCount} tasks done this week." — or null` : 'null'}
+- claire_note: ${claireContext ? `Surface this naturally once, at the most relevant point in the plan: "${claireContext}"` : 'null — omit'}
 `
 }
 
@@ -58,6 +61,9 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [checkingExisting, setCheckingExisting] = useState(true)
+  const [step, setStep] = useState<'claire' | 'dump'>('claire')
+  const [savingCheckin, setSavingCheckin] = useState(false)
+  const { todayCheckin, claireContext, saveCheckin, loading: checkinLoading } = useClaireCheckin(user)
 
   // Fetch ALL active promises (both contexts) for kickstart display
   const { promises: workPromises, completePromise: completeWorkPromise } = usePromises(user, 'work')
@@ -163,7 +169,7 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
         : ''
 
       const streakCount = (streakRow as { current_streak: number } | null)?.current_streak ?? 0
-      const systemPrompt = buildSystemPrompt(streakCount, weeklyTaskCount)
+      const systemPrompt = buildSystemPrompt(streakCount, weeklyTaskCount, claireContext)
 
       const userMessage = `${rawInput}${yesterdayThread}${yesterdayCompletedContext}${promisesContext}`
 
@@ -216,12 +222,40 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
     }
   }
 
-  if (checkingExisting) {
+  if (checkingExisting || checkinLoading) {
     return (
       <div className="space-y-3 animate-pulse">
         <div className="h-20 rounded-lg bg-secondary" />
         <div className="h-4 w-2/3 rounded-lg bg-secondary" />
         <div className="h-4 w-1/2 rounded-lg bg-secondary" />
+      </div>
+    )
+  }
+
+  if (step === 'claire' && !todayCheckin && !result) {
+    return (
+      <div className="space-y-5">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+          >
+            ← Back
+          </button>
+        )}
+        <ClaireCheckinStep
+          saving={savingCheckin}
+          onSkip={() => setStep('dump')}
+          onSave={async (quality_time, blocker) => {
+            setSavingCheckin(true)
+            const yday = new Date()
+            yday.setDate(yday.getDate() - 1)
+            const err = await saveCheckin(yday.toISOString().split('T')[0], quality_time, blocker)
+            setSavingCheckin(false)
+            if (!err) setStep('dump')
+            return err
+          }}
+        />
       </div>
     )
   }
