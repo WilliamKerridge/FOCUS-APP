@@ -69,8 +69,13 @@ export default function HomeMode({ user }: Props) {
     setSaving(true)
     setSaveError(null)
     let err: string | null
-    if (madeTo.trim() && dueDate) {
-      err = await addPromise(title.trim(), madeTo.trim(), dueDate)
+    if (madeTo.trim()) {
+      const effectiveDue = dueDate || (() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 7)
+        return d.toISOString().split('T')[0]
+      })()
+      err = await addPromise(title.trim(), madeTo.trim(), effectiveDue)
     } else {
       err = await addTask(title.trim(), 'home', dueDate || null)
     }
