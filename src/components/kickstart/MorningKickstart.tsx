@@ -49,7 +49,7 @@ Rules:
 - overcommitted: true if the combined list is unrealistic for one day
 - overcommit_note: plain warning string if overcommitted, otherwise null
 - streak_note: ${(streakCount >= 3 || weeklyTaskCount >= 5) ? `brief momentum note if warranted — direct tone. ${streakContext} ${weeklyContext} e.g. "Nine days straight. ${weeklyTaskCount} tasks done this week." — or null` : 'null'}
-- claire_note: ${claireContext ? `Surface this naturally once, at the most relevant point in the plan: "${claireContext}"` : 'null — omit'}
+- claire_note: ${claireContext ? `Surface this naturally once, at the most relevant point in the plan: "${claireContext.replace(/"/g, "'").replace(/\n/g, ' ')}"` : 'null — omit'}
 `
 }
 
@@ -63,7 +63,7 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
   const [checkingExisting, setCheckingExisting] = useState(true)
   const [step, setStep] = useState<'claire' | 'dump'>('claire')
   const [savingCheckin, setSavingCheckin] = useState(false)
-  const { todayCheckin, claireContext, saveCheckin, loading: checkinLoading } = useClaireCheckin(user)
+  const { todayCheckin, claireContext, saveCheckin, loading: checkinLoading, fetchFailed } = useClaireCheckin(user)
 
   // Fetch ALL active promises (both contexts) for kickstart display
   const { promises: workPromises, completePromise: completeWorkPromise } = usePromises(user, 'work')
@@ -232,7 +232,7 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
     )
   }
 
-  if (step === 'claire' && !todayCheckin && !result) {
+  if (step === 'claire' && !todayCheckin && !result && !fetchFailed) {
     return (
       <div className="space-y-5">
         {onBack && (
@@ -248,12 +248,17 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
           onSkip={() => setStep('dump')}
           onSave={async (quality_time, blocker) => {
             setSavingCheckin(true)
-            const yday = new Date()
-            yday.setDate(yday.getDate() - 1)
-            const err = await saveCheckin(yday.toISOString().split('T')[0], quality_time, blocker)
-            setSavingCheckin(false)
-            if (!err) setStep('dump')
-            return err
+            try {
+              const yday = new Date()
+              yday.setDate(yday.getDate() - 1)
+              const err = await saveCheckin(yday.toISOString().split('T')[0], quality_time, blocker)
+              if (!err) setStep('dump')
+              return err
+            } catch (e) {
+              return e instanceof Error ? e.message : 'Could not save check-in'
+            } finally {
+              setSavingCheckin(false)
+            }
           }}
         />
       </div>

@@ -71,6 +71,7 @@ export function useClaireCheckin(user: User) {
   const [recentCheckins, setRecentCheckins] = useState<ClaireCheckin[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fetchFailed, setFetchFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +88,7 @@ export function useClaireCheckin(user: User) {
     }).catch((err: unknown) => {
       if (!cancelled) {
         setError(err instanceof Error ? err.message : 'Failed to load')
+        setFetchFailed(true)
         setLoading(false)
       }
     })
@@ -116,6 +118,7 @@ export function useClaireCheckin(user: User) {
     recentCheckins,
     loading,
     error,
+    fetchFailed,
     claireContext: buildClaireContext(recentCheckins),
     saveCheckin,
   }
