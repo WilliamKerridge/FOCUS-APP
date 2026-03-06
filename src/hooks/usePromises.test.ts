@@ -40,6 +40,12 @@ function makeInsertChain(result: unknown) {
   c.insert = vi.fn(fn); c.select = vi.fn(fn); c.single = vi.fn(() => Promise.resolve(result))
   return c
 }
+function makeUpdateSingleChain(result: unknown) {
+  const c: Record<string, unknown> = {}
+  const fn = () => c
+  c.update = vi.fn(fn); c.eq = vi.fn(fn); c.select = vi.fn(fn); c.single = vi.fn(() => Promise.resolve(result))
+  return c
+}
 
 beforeEach(() => { vi.clearAllMocks() })
 
@@ -101,5 +107,42 @@ describe('usePromises', () => {
     await waitFor(() => expect(result.current.promises).toHaveLength(1))
     await act(async () => { await result.current.archivePromise('p-1') })
     expect(result.current.promises).toHaveLength(0)
+  })
+
+  it('updatePromise patches a promise in state', async () => {
+    const updated = { ...fakePromise, due_date: '2026-03-15' }
+    mockFrom
+      .mockReturnValueOnce(makeSelectChain({ data: [fakePromise], error: null }))
+      .mockReturnValueOnce(makeUpdateSingleChain({ data: updated, error: null }))
+    const { result } = renderHook(() => usePromises(fakeUser, 'work'))
+    await waitFor(() => expect(result.current.promises).toHaveLength(1))
+    let err: string | null = 'not-called'
+    await act(async () => { err = await result.current.updatePromise('p-1', { due_date: '2026-03-15' }) })
+    expect(err).toBeNull()
+    expect(result.current.promises.find(p => p.id === 'p-1')?.due_date).toBe('2026-03-15')
+  })
+
+  it('updatePromise returns error string on failure', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeSelectChain({ data: [fakePromise], error: null }))
+      .mockReturnValueOnce(makeUpdateSingleChain({ data: null, error: { message: 'update failed' } }))
+    const { result } = renderHook(() => usePromises(fakeUser, 'work'))
+    await waitFor(() => expect(result.current.promises).toHaveLength(1))
+    let err: string | null = null
+    await act(async () => { err = await result.current.updatePromise('p-1', { due_date: '2026-03-15' }) })
+    expect(err).toBe('update failed')
+  })
+
+  it('updatePromise with made_to updates state', async () => {
+    const updated = { ...fakePromise, made_to: 'Bob' }
+    mockFrom
+      .mockReturnValueOnce(makeSelectChain({ data: [fakePromise], error: null }))
+      .mockReturnValueOnce(makeUpdateSingleChain({ data: updated, error: null }))
+    const { result } = renderHook(() => usePromises(fakeUser, 'work'))
+    await waitFor(() => expect(result.current.promises).toHaveLength(1))
+    let err: string | null = 'not-called'
+    await act(async () => { err = await result.current.updatePromise('p-1', { made_to: 'Bob' }) })
+    expect(err).toBeNull()
+    expect(result.current.promises.find(p => p.id === 'p-1')?.made_to).toBe('Bob')
   })
 })

@@ -65,5 +65,25 @@ export function usePromises(user: User | null, context: 'work' | 'home') {
     return null
   }, [])
 
-  return { promises, loading, error, addPromise, completePromise, archivePromise }
+  const updatePromise = useCallback(async (
+    id: string,
+    changes: { title?: string; due_date?: string; made_to?: string | null }
+  ): Promise<string | null> => {
+    const { data, error: err } = await supabase
+      .from('promises')
+      .update(changes)
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (err) return err.message
+    if (data) {
+      setPromises(prev =>
+        prev.map(p => p.id === id ? data as UserPromise : p)
+          .sort((a, b) => a.due_date.localeCompare(b.due_date))
+      )
+    }
+    return null
+  }, [])
+
+  return { promises, loading, error, addPromise, completePromise, archivePromise, updatePromise }
 }
