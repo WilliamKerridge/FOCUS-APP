@@ -17,6 +17,9 @@ import ReEntryPrompt from '@/components/focus/ReEntryPrompt'
 import TaskList from '@/components/tasks/TaskList'
 import { useTaskList } from '@/hooks/useTaskList'
 import ReviewScreen from '@/components/review/ReviewScreen'
+import AgendaView from '@/components/calendar/AgendaView'
+import ItemDetailCard from '@/components/calendar/ItemDetailCard'
+import type { AgendaItem } from '@/components/calendar/AgendaView'
 
 interface Props {
   user: User
@@ -31,14 +34,16 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<DesktopView>('work')
   const [showEmailDrop, setShowEmailDrop] = useState(false)
   const [redoingKickstart, setRedoingKickstart] = useState(false)
-  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask } = useTaskList(user, ['work', 'waiting_for'])
+  const [leftTab, setLeftTab] = useState<'tasks' | 'agenda'>('tasks')
+  const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null)
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask, updateTask } = useTaskList(user, ['work', 'waiting_for'])
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
   const { plan, loading: loadingPlan, error: planError, refreshPlan } = useTodayKickstart(user)
   const { items: inboxItems } = useEmailInbox(user)
   const inboxCount = inboxItems.length
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
-  const { promises: workPromises, completePromise: completeWorkPromise } = usePromises(user, 'work')
-  const { promises: homePromises, completePromise: completeHomePromise } = usePromises(user, 'home')
+  const { promises: workPromises, completePromise: completeWorkPromise, updatePromise: updateWorkPromise } = usePromises(user, 'work')
+  const { promises: homePromises, completePromise: completeHomePromise, updatePromise: updateHomePromise } = usePromises(user, 'home')
   const allPromises = [...workPromises, ...homePromises].sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   useEffect(() => {
@@ -85,6 +90,27 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
     <div className="grid grid-cols-2 gap-8">
       {/* Left column — planning */}
       <div className="space-y-4">
+        <div className="flex gap-1 bg-secondary rounded-lg p-1">
+          <button onClick={() => setLeftTab('tasks')} className={`flex-1 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${leftTab === 'tasks' ? 'bg-background shadow' : ''}`}>Tasks</button>
+          <button onClick={() => setLeftTab('agenda')} className={`flex-1 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${leftTab === 'agenda' ? 'bg-background shadow' : ''}`}>Agenda</button>
+        </div>
+
+        {leftTab === 'agenda' && (
+          <AgendaView
+            items={[
+              ...openTasks.map(t => ({ kind: 'task' as const, id: t.id, title: t.title, madeTo: null, dueDate: t.due_date })),
+              ...allPromises.map(p => ({ kind: 'promise' as const, id: p.id, title: p.title, madeTo: p.made_to, dueDate: p.due_date })),
+            ]}
+            onComplete={(item) => {
+              if (item.kind === 'task') markDone(item.id)
+              else if (workPromises.some(p => p.id === item.id)) completeWorkPromise(item.id)
+              else completeHomePromise(item.id)
+            }}
+            onTap={setSelectedItem}
+          />
+        )}
+
+        {leftTab === 'tasks' && <>
         {planError && <p className="text-sm text-destructive">{planError}</p>}
         {loadingPlan ? (
           <div className="space-y-3 animate-pulse">
@@ -161,6 +187,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             )}
           </button>
         </div>
+        </>}
       </div>
 
       {/* Right column — doing */}
@@ -174,6 +201,24 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
         />
       </div>
     </div>
+
+    {selectedItem && (
+      <ItemDetailCard
+        item={selectedItem}
+        onSave={async (changes) => {
+          if (selectedItem.kind === 'task') return updateTask(selectedItem.id, changes)
+          const fn = workPromises.some(p => p.id === selectedItem.id) ? updateWorkPromise : updateHomePromise
+          return fn(selectedItem.id, { ...changes, due_date: changes.due_date ?? undefined })
+        }}
+        onComplete={() => {
+          if (selectedItem.kind === 'task') markDone(selectedItem.id)
+          else if (workPromises.some(p => p.id === selectedItem.id)) completeWorkPromise(selectedItem.id)
+          else completeHomePromise(selectedItem.id)
+          setSelectedItem(null)
+        }}
+        onClose={() => setSelectedItem(null)}
+      />
+    )}
     </div>
   )
 }

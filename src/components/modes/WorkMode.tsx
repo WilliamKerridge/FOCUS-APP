@@ -12,8 +12,12 @@ import { useTaskList } from '@/hooks/useTaskList'
 import ReviewScreen from '@/components/review/ReviewScreen'
 import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
 import PromisesList from '@/components/promises/PromisesList'
+import AgendaView from '@/components/calendar/AgendaView'
+import ItemDetailCard from '@/components/calendar/ItemDetailCard'
+import type { AgendaItem } from '@/components/calendar/AgendaView'
+import { usePromises } from '@/hooks/usePromises'
 
-type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email' | 'promises'
+type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email' | 'promises' | 'agenda'
 
 interface Props {
   user: User
@@ -24,8 +28,10 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
   const [view, setView] = useState<WorkView>('home')
   const [selectedTask, setSelectedTask] = useState<string | undefined>()
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>()
+  const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null)
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
-  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask } = useTaskList(user, ['work', 'waiting_for'])
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask, updateTask } = useTaskList(user, ['work', 'waiting_for'])
+  const { promises: workPromises, completePromise: completeWorkPromise, updatePromise: updateWorkPromise } = usePromises(user, 'work')
 
   function handleSelectTask(task: string) {
     setSelectedTask(task)
@@ -56,6 +62,43 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
 
   if (view === 'promises') {
     return <PromisesList user={user} context="work" onBack={() => setView('home')} />
+  }
+
+  if (view === 'agenda') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setView('home')} className="text-sm text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer">← Back</button>
+          <h2 className="text-lg font-bold">Agenda</h2>
+        </div>
+        <AgendaView
+          items={[
+            ...openTasks.map(t => ({ kind: 'task' as const, id: t.id, title: t.title, madeTo: null, dueDate: t.due_date })),
+            ...workPromises.map(p => ({ kind: 'promise' as const, id: p.id, title: p.title, madeTo: p.made_to, dueDate: p.due_date })),
+          ]}
+          onComplete={(item) => {
+            if (item.kind === 'task') markDone(item.id)
+            else completeWorkPromise(item.id)
+          }}
+          onTap={setSelectedItem}
+        />
+        {selectedItem && (
+          <ItemDetailCard
+            item={selectedItem}
+            onSave={async (changes) => {
+              if (selectedItem.kind === 'task') return updateTask(selectedItem.id, changes)
+              return updateWorkPromise(selectedItem.id, { ...changes, due_date: changes.due_date ?? undefined })
+            }}
+            onComplete={() => {
+              if (selectedItem.kind === 'task') markDone(selectedItem.id)
+              else completeWorkPromise(selectedItem.id)
+              setSelectedItem(null)
+            }}
+            onClose={() => setSelectedItem(null)}
+          />
+        )}
+      </div>
+    )
   }
 
   if (view === 'review') {
@@ -125,6 +168,14 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
         >
           <p className="font-semibold">Promises</p>
           <p className="text-sm text-muted-foreground mt-0.5">Commitments you've made</p>
+        </button>
+
+        <button
+          onClick={() => setView('agenda')}
+          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
+        >
+          <p className="font-semibold">Agenda</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Tasks & promises by date</p>
         </button>
       </div>
 
