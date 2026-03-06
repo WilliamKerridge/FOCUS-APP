@@ -1,10 +1,10 @@
 // src/components/modes/HomeMode.tsx
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import { useTaskList } from '@/hooks/useTaskList'
 import { usePromises } from '@/hooks/usePromises'
-import { getToday } from '@/lib/utils'
+import { getToday, getDefaultDue } from '@/lib/utils'
 
 interface Props {
   user: User
@@ -29,6 +29,13 @@ export default function HomeMode({ user }: Props) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+    }
+  }, [])
 
   const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, addTask } = useTaskList(user, ['home'])
   const { promises, loading: promisesLoading, error: promisesError, addPromise, completePromise } = usePromises(user, 'home')
@@ -70,11 +77,7 @@ export default function HomeMode({ user }: Props) {
     setSaveError(null)
     let err: string | null
     if (madeTo.trim()) {
-      const effectiveDue = dueDate || (() => {
-        const d = new Date()
-        d.setDate(d.getDate() + 7)
-        return d.toISOString().split('T')[0]
-      })()
+      const effectiveDue = dueDate || getDefaultDue()
       err = await addPromise(title.trim(), madeTo.trim(), effectiveDue)
     } else {
       err = await addTask(title.trim(), 'home', dueDate || null)
@@ -87,7 +90,8 @@ export default function HomeMode({ user }: Props) {
       setMadeTo('')
       setDueDate('')
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
+      savedTimerRef.current = setTimeout(() => setSaved(false), 2000)
     }
   }
 

@@ -3,18 +3,12 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { usePromises } from '@/hooks/usePromises'
-import { getToday } from '@/lib/utils'
+import { getToday, getDefaultDue } from '@/lib/utils'
 
 interface Props {
   user: User
   context: 'work' | 'home'
   onBack: () => void
-}
-
-function getDefaultDue(): string {
-  const d = new Date()
-  d.setDate(d.getDate() + 7)
-  return d.toISOString().split('T')[0]
 }
 
 function dueDateLabel(due: string): { text: string; color: string } {
