@@ -5,6 +5,8 @@ import SessionPanel from '@/components/focus/SessionPanel'
 import { useTaskList } from '@/hooks/useTaskList'
 import { usePromises } from '@/hooks/usePromises'
 import { getToday, getDefaultDue } from '@/lib/utils'
+import WeeklyStrip from '@/components/calendar/WeeklyStrip'
+import ItemDetailCard from '@/components/calendar/ItemDetailCard'
 
 interface Props {
   user: User
@@ -37,8 +39,11 @@ export default function HomeMode({ user }: Props) {
     }
   }, [])
 
-  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, addTask } = useTaskList(user, ['home'])
-  const { promises, loading: promisesLoading, error: promisesError, addPromise, completePromise } = usePromises(user, 'home')
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [selectedItem, setSelectedItem] = useState<UnifiedItem | null>(null)
+
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, addTask, updateTask } = useTaskList(user, ['home'])
+  const { promises, loading: promisesLoading, error: promisesError, addPromise, completePromise, updatePromise } = usePromises(user, 'home')
 
   const activeItems = useMemo((): UnifiedItem[] => {
     const items: UnifiedItem[] = [
@@ -64,6 +69,10 @@ export default function HomeMode({ user }: Props) {
       return a.dueDate.localeCompare(b.dueDate)
     })
   }, [openTasks, promises])
+
+  const visibleItems = selectedDay
+    ? activeItems.filter(i => i.dueDate === selectedDay)
+    : activeItems
 
   const doneItems = useMemo(() =>
     completedTasks.map(t => ({ id: t.id, title: t.title })),
@@ -138,21 +147,27 @@ export default function HomeMode({ user }: Props) {
         </button>
       </form>
 
+      <WeeklyStrip
+        itemDates={activeItems.map(i => i.dueDate)}
+        selectedDay={selectedDay}
+        onSelectDay={setSelectedDay}
+      />
+
       {loading && <div className="animate-pulse h-16 rounded-xl bg-secondary" />}
       {loadError && <p className="text-sm text-destructive">{loadError}</p>}
 
-      {!loading && activeItems.length === 0 && (
-        <p className="text-sm text-muted-foreground px-1">Nothing on your list.</p>
+      {!loading && visibleItems.length === 0 && (
+        <p className="text-sm text-muted-foreground px-1">{selectedDay ? 'Nothing due this day.' : 'Nothing on your list.'}</p>
       )}
 
       <div className="space-y-2">
-        {activeItems.map(item => {
+        {visibleItems.map(item => {
           const label = dueDateLabel(item.dueDate)
           return (
-            <div key={`${item.kind}-${item.id}`} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-secondary border border-border">
+            <div key={`${item.kind}-${item.id}`} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-secondary border border-border cursor-pointer hover:bg-secondary/70" onClick={() => setSelectedItem(item)}>
               <button
                 aria-label={`Complete ${item.title}`}
-                onClick={() => item.kind === 'task' ? markDone(item.id) : completePromise(item.id)}
+                onClick={e => { e.stopPropagation(); item.kind === 'task' ? markDone(item.id) : completePromise(item.id) }}
                 className="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-border hover:border-primary cursor-pointer transition-colors"
               />
               <div className="flex-1 min-w-0">
@@ -183,6 +198,22 @@ export default function HomeMode({ user }: Props) {
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
         <SessionPanel user={user} />
       </div>
+
+      {selectedItem && (
+        <ItemDetailCard
+          item={selectedItem}
+          onSave={async (changes) => {
+            if (selectedItem.kind === 'task') return updateTask(selectedItem.id, changes)
+            return updatePromise(selectedItem.id, { ...changes, due_date: changes.due_date ?? undefined, made_to: changes.made_to })
+          }}
+          onComplete={() => {
+            if (selectedItem.kind === 'task') markDone(selectedItem.id)
+            else completePromise(selectedItem.id)
+            setSelectedItem(null)
+          }}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   )
 }
