@@ -53,7 +53,12 @@ describe('useClaireCheckin', () => {
   })
 
   it('saveCheckin upserts and updates todayCheckin', async () => {
-    const upsertMock = vi.fn(() => Promise.resolve({ error: null }))
+    const savedRow = { id: 'c2', user_id: 'user-1', date: yesterday, quality_time: 'yes', blocker: null, created_at: '' }
+    const upsertMock = vi.fn(() => ({
+      select: () => ({
+        single: () => Promise.resolve({ data: savedRow, error: null }),
+      }),
+    }))
     mockFrom.mockImplementation(() => ({
       select: () => ({
         eq: () => ({
@@ -78,6 +83,7 @@ describe('useClaireCheckin', () => {
       expect.any(Object)
     )
     expect(result.current.todayCheckin?.quality_time).toBe('yes')
+    expect(result.current.todayCheckin?.id).toBe('c2')
   })
 
   it('detects 3+ consecutive no/partial pattern', async () => {
@@ -101,5 +107,31 @@ describe('useClaireCheckin', () => {
     const { result } = renderHook(() => useClaireCheckin(fakeUser))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.claireContext).toContain('3+')
+  })
+
+  it('detects 5+ consecutive yes pattern', async () => {
+    const recent = Array.from({ length: 5 }, (_, i) => ({
+      id: String(i),
+      user_id: 'user-1',
+      date: `2026-03-0${5 - i}`,
+      quality_time: 'yes',
+      blocker: null,
+      created_at: '',
+    }))
+    mockFrom.mockImplementation(() => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+          order: () => ({
+            limit: () => Promise.resolve({ data: recent, error: null }),
+          }),
+        }),
+      }),
+      upsert: vi.fn(() => Promise.resolve({ error: null })),
+    }))
+
+    const { result } = renderHook(() => useClaireCheckin(fakeUser))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.claireContext).toContain('consecutive good evenings')
   })
 })

@@ -70,18 +70,28 @@ export function useClaireCheckin(user: User) {
   const [todayCheckin, setTodayCheckin] = useState<ClaireCheckin | null>(null)
   const [recentCheckins, setRecentCheckins] = useState<ClaireCheckin[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     const yday = yesterday()
 
     Promise.all([
       fetchTodayCheckin(user.id, yday),
       fetchRecentCheckins(user.id),
     ]).then(([today, recent]) => {
+      if (cancelled) return
       setTodayCheckin(today)
       setRecentCheckins(recent)
       setLoading(false)
+    }).catch((err: unknown) => {
+      if (!cancelled) {
+        setError(err instanceof Error ? err.message : 'Failed to load')
+        setLoading(false)
+      }
     })
+
+    return () => { cancelled = true }
   }, [user.id])
 
   const saveCheckin = useCallback(async (
@@ -90,24 +100,22 @@ export function useClaireCheckin(user: User) {
     blocker?: string | null
   ): Promise<string | null> => {
     const row = { user_id: user.id, date, quality_time, blocker: blocker ?? null }
-    const { error } = await supabase
+    const { data, error: upsertError } = await supabase
       .from('claire_checkins')
       .upsert(row, { onConflict: 'user_id,date' })
-    if (!error) {
-      const checkin: ClaireCheckin = {
-        id: '',
-        created_at: new Date().toISOString(),
-        ...row,
-      }
-      setTodayCheckin(checkin)
+      .select('*')
+      .single()
+    if (!upsertError) {
+      setTodayCheckin(data as ClaireCheckin)
     }
-    return error?.message ?? null
+    return upsertError?.message ?? null
   }, [user.id])
 
   return {
     todayCheckin,
     recentCheckins,
     loading,
+    error,
     claireContext: buildClaireContext(recentCheckins),
     saveCheckin,
   }
