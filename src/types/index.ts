@@ -11,6 +11,7 @@ export interface Profile {
   onboarding_complete: boolean
   current_mode: Mode
   mode_changed_at: string
+  ical_token: string
   created_at: string
   updated_at: string
 }
