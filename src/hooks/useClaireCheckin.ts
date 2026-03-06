@@ -87,9 +87,9 @@ export function useClaireCheckin(user: User) {
   const saveCheckin = useCallback(async (
     date: string,
     quality_time: 'yes' | 'no' | 'partial',
-    blocker: string | null
+    blocker?: string | null
   ): Promise<string | null> => {
-    const row = { user_id: user.id, date, quality_time, blocker }
+    const row = { user_id: user.id, date, quality_time, blocker: blocker ?? null }
     const { error } = await supabase
       .from('claire_checkins')
       .upsert(row, { onConflict: 'user_id,date' })
