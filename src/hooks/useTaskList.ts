@@ -23,6 +23,7 @@ interface UseTaskListResult {
   error: string | null
   markDone: (id: string) => Promise<void>
   createCompletedTask: (title: string, context: 'work' | 'home', source?: string) => Promise<void>
+  addTask: (title: string, context: 'work' | 'home', dueDate?: string | null) => Promise<string | null>
   refresh: () => void
 }
 
@@ -108,6 +109,29 @@ export function useTaskList(
     if (data) setCompletedTasks(prev => [data as Task, ...prev])
   }, [user])
 
+  const addTask = useCallback(async (
+    title: string,
+    context: 'work' | 'home',
+    dueDate?: string | null
+  ): Promise<string | null> => {
+    const { data, error: insertError } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: user!.id,
+        title,
+        context,
+        priority: 0,
+        status: 'open',
+        source: 'quick_capture',
+        due_date: dueDate ?? null,
+      })
+      .select('id, title, context, priority, status, waiting_for_person, due_date, source, created_at, completed_at')
+      .single()
+    if (insertError) return insertError.message
+    if (data) setOpenTasks(prev => [...prev, data as Task])
+    return null
+  }, [user])
+
   return {
     openTasks,
     completedTasks,
@@ -115,6 +139,7 @@ export function useTaskList(
     error,
     markDone,
     createCompletedTask,
+    addTask,
     refresh: () => setFetchCount(c => c + 1),
   }
 }
