@@ -160,3 +160,12 @@ export interface UserPushSubscription {
   auth: string
   created_at: string
 }
+
+export interface ClaireCheckin {
+  id: string
+  user_id: string
+  date: string          // 'YYYY-MM-DD' — the evening being reflected on (yesterday)
+  quality_time: 'yes' | 'no' | 'partial'
+  blocker: string | null
+  created_at: string
+}
