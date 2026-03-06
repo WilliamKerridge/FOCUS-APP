@@ -43,17 +43,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'API key not configured' })
   }
 
+  if (!process.env.RESEND_API_KEY) {
+    console.error('RESEND_API_KEY is not set')
+    return res.status(500).json({ error: 'API key not configured' })
+  }
+
   if (!req.body || typeof req.body !== 'object') {
     return res.status(400).json({ error: 'Invalid request body' })
   }
 
   try {
-    // Resend sends parsed email fields in the POST body
-    const { from, subject, text, html } = req.body as {
+    // Resend inbound webhook: fields are nested under req.body.data
+    const { email_id, from, subject } = (req.body.data ?? req.body) as {
+      email_id?: string
       from: string
-      subject: string
-      text?: string
-      html?: string
+      subject?: string
     }
 
     if (!from) {
@@ -64,8 +68,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const senderMatch = from.match(/<(.+?)>/)
     const senderEmail = senderMatch ? senderMatch[1].toLowerCase() : from.toLowerCase()
 
-    // Use plain text body for extraction, fall back to html, then subject
-    const emailBody = text || html || subject || 'No body'
+    // Fetch full email body from Resend API (not included in webhook payload)
+    let emailBody = subject || 'No body'
+    if (email_id) {
+      try {
+        const emailRes = await fetch(`https://api.resend.com/emails/receiving/${email_id}`, {
+          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+        })
+        if (emailRes.ok) {
+          const emailData = await emailRes.json() as { text?: string; html?: string }
+          emailBody = emailData.text || emailData.html || emailBody
+        }
+      } catch (err) {
+        console.error('Failed to fetch email body from Resend:', err)
+      }
+    }
 
     // Get William's user_id and personal_emails from profiles (single-user app)
     const { data: profile } = await supabase
