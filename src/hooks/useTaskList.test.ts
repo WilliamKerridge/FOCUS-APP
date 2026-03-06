@@ -97,4 +97,46 @@ describe('useTaskList', () => {
     await act(async () => { err = await result.current.addTask('Call mum', 'home', null) })
     expect(err).toBe('insert failed')
   })
+
+  it('updateTask patches a task in openTasks', async () => {
+    const existing = { id: 't-1', title: 'Buy milk', context: 'home', priority: 0, status: 'open', waiting_for_person: null, due_date: null, source: 'quick_capture', created_at: '2026-03-06T09:00:00Z', completed_at: null }
+    const updated = { ...existing, title: 'Buy oat milk', due_date: '2026-03-10' }
+    mockFrom
+      .mockReturnValueOnce(makeOpenChain([existing]))
+      .mockReturnValueOnce(makeDoneChain([]))
+      .mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: updated, error: null }),
+      })
+
+    const { result } = renderHook(() => useTaskList(fakeUser, ['home']))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    let err: string | null = 'not-called'
+    await act(async () => { err = await result.current.updateTask('t-1', { title: 'Buy oat milk', due_date: '2026-03-10' }) })
+
+    expect(err).toBeNull()
+    expect(result.current.openTasks.find(t => t.id === 't-1')?.title).toBe('Buy oat milk')
+  })
+
+  it('updateTask returns error on failure', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeOpenChain([]))
+      .mockReturnValueOnce(makeDoneChain([]))
+      .mockReturnValue({
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: { message: 'update failed' } }),
+      })
+
+    const { result } = renderHook(() => useTaskList(fakeUser, ['home']))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    let err: string | null = null
+    await act(async () => { err = await result.current.updateTask('t-1', { title: 'Buy oat milk' }) })
+    expect(err).toBe('update failed')
+  })
 })
