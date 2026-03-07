@@ -4,6 +4,9 @@ import { supabase } from '@/lib/supabase'
 import { callClaude } from '@/lib/claude'
 import type { User } from '@supabase/supabase-js'
 import type { EndOfDayContent } from '@/types'
+import ClaireCheckin from '@/components/kickstart/ClaireCheckin'
+import { useClaireCheckin } from '@/hooks/useClaireCheckin'
+import { getToday } from '@/lib/utils'
 
 interface Props {
   user: User
@@ -32,6 +35,9 @@ export default function EndOfDayHandoff({ user, onBack, onSwitchToTransition }: 
   const [existingId, setExistingId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showClaireStep, setShowClaireStep] = useState(false)
+  const [claireSaving, setClaireSaving] = useState(false)
+  const { saveCheckin } = useClaireCheckin(user)
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -81,6 +87,7 @@ export default function EndOfDayHandoff({ user, onBack, onSwitchToTransition }: 
       const cleaned = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
       const parsed = JSON.parse(cleaned) as EndOfDayContent
       setResult(parsed)
+      setShowClaireStep(true)
 
       const today = new Date().toISOString().split('T')[0]
 
@@ -112,6 +119,25 @@ export default function EndOfDayHandoff({ user, onBack, onSwitchToTransition }: 
     } finally {
       setLoading(false)
     }
+  }
+
+  if (result && showClaireStep) {
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-muted-foreground">One last thing before you go…</p>
+        <ClaireCheckin
+          saving={claireSaving}
+          onSave={async (quality_time, blocker) => {
+            setClaireSaving(true)
+            const err = await saveCheckin(getToday(), quality_time, blocker)
+            setClaireSaving(false)
+            setShowClaireStep(false)
+            return err
+          }}
+          onSkip={() => setShowClaireStep(false)}
+        />
+      </div>
+    )
   }
 
   if (result) {
