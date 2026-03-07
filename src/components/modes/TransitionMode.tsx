@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import { callClaude } from '@/lib/claude'
 import { supabase } from '@/lib/supabase'
 import { usePromises } from '@/hooks/usePromises'
+import { useClaireCheckin } from '@/hooks/useClaireCheckin'
 import { getToday } from '@/lib/utils'
 import type { Mode } from '@/types'
 
@@ -15,6 +16,7 @@ interface Props {
 
 export default function TransitionMode({ user, onModeChange }: Props) {
   const { promises } = usePromises(user, 'work')
+  const { claireContext } = useClaireCheckin(user)
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
 
   // Step 1
@@ -147,6 +149,9 @@ export default function TransitionMode({ user, onModeChange }: Props) {
       {step === 3 && (
         <div className="space-y-4">
           <h2 className="text-lg font-bold">Presence intention</h2>
+          {claireContext && (
+            <p className="text-sm text-amber-400/90 italic">{claireContext}</p>
+          )}
           <p className="text-sm text-muted-foreground">How will you be present tonight?</p>
           <input
             type="text"
