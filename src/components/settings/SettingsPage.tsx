@@ -19,7 +19,26 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
     (profile.personal_emails ?? []).join('\n')
   )
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
+  const [icalToken, setIcalToken] = useState(profile.ical_token)
+  const [copied, setCopied] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const icalUrl = `https://focus-app-sandy.vercel.app/api/ical?token=${icalToken}`
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(icalUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleRegenerate() {
+    setRegenerating(true)
+    const newToken = crypto.randomUUID()
+    await supabase.from('profiles').update({ ical_token: newToken }).eq('id', user.id)
+    setIcalToken(newToken)
+    setRegenerating(false)
+  }
 
   // Debounced save
   useEffect(() => {
@@ -134,6 +153,24 @@ export default function SettingsPage({ user, profile, updateProfile }: Props) {
             placeholder="will1kerridge@gmail.com"
           />
         </div>
+      </div>
+
+      {/* Calendar feed */}
+      <div className="space-y-3 pt-4 border-t border-border">
+        <h3 className="text-sm font-semibold">Calendar feed</h3>
+        <p className="text-xs text-muted-foreground">Subscribe to this URL in Apple Calendar, Google Calendar, or Outlook to see your tasks and promises with due dates as all-day events.</p>
+        <div className="flex gap-2">
+          <input readOnly value={icalUrl}
+            className="flex-1 px-3 py-2 rounded-lg bg-secondary border border-border text-xs text-muted-foreground focus:outline-none" />
+          <button onClick={handleCopy}
+            className="px-3 py-2 rounded-lg bg-secondary border border-border text-xs font-medium cursor-pointer whitespace-nowrap">
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <button onClick={handleRegenerate} disabled={regenerating}
+          className="text-xs text-muted-foreground hover:text-destructive cursor-pointer disabled:opacity-40">
+          {regenerating ? 'Regenerating…' : 'Regenerate (revokes current link)'}
+        </button>
       </div>
 
       {/* Account */}
