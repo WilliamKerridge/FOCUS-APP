@@ -66,8 +66,8 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
   const { todayCheckin, claireContext, saveCheckin, loading: checkinLoading, fetchFailed } = useClaireCheckin(user)
 
   // Fetch ALL active promises (both contexts) for kickstart display
-  const { promises: workPromises, completePromise: completeWorkPromise } = usePromises(user, 'work')
-  const { promises: homePromises, completePromise: completeHomePromise } = usePromises(user, 'home')
+  const { promises: workPromises } = usePromises(user, 'work')
+  const { promises: homePromises } = usePromises(user, 'home')
   const allPromises = [...workPromises, ...homePromises].sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   useEffect(() => {
