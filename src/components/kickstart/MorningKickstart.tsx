@@ -299,13 +299,6 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
             onItemComplete={onItemComplete}
             userId={user.id}
             activePromises={allPromises}
-            onPromiseComplete={async (id) => {
-              if (workPromises.some(p => p.id === id)) {
-                await completeWorkPromise(id)
-              } else {
-                await completeHomePromise(id)
-              }
-            }}
           />
         )}
       </div>

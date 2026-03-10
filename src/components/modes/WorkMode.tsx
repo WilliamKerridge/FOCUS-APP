@@ -11,13 +11,14 @@ import TaskList from '@/components/tasks/TaskList'
 import { useTaskList } from '@/hooks/useTaskList'
 import ReviewScreen from '@/components/review/ReviewScreen'
 import EmailDropOverlay from '@/components/desktop/EmailDropOverlay'
-import PromisesList from '@/components/promises/PromisesList'
 import AgendaView from '@/components/calendar/AgendaView'
 import ItemDetailCard from '@/components/calendar/ItemDetailCard'
 import type { AgendaItem } from '@/components/calendar/AgendaView'
 import { usePromises } from '@/hooks/usePromises'
+import { getToday } from '@/lib/utils'
+import QuickCaptureFAB from '@/components/capture/QuickCaptureFAB'
 
-type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email' | 'promises' | 'agenda'
+type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email' | 'agenda'
 
 interface Props {
   user: User
@@ -30,7 +31,7 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
   const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>()
   const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null)
   const { abandonedSession, closeAbandoned } = useFocusSession(user)
-  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask, updateTask } = useTaskList(user, ['work', 'waiting_for'])
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, addTask, createCompletedTask, updateTask } = useTaskList(user, ['work', 'waiting_for'])
   const { promises: workPromises, completePromise: completeWorkPromise, updatePromise: updateWorkPromise } = usePromises(user, 'work')
 
   function handleSelectTask(task: string) {
@@ -58,10 +59,6 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
 
   if (view === 'email') {
     return <EmailDropOverlay user={user} onClose={() => setView('home')} />
-  }
-
-  if (view === 'promises') {
-    return <PromisesList user={user} context="work" onBack={() => setView('home')} />
   }
 
   if (view === 'agenda') {
@@ -162,13 +159,18 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
           <p className="text-sm text-muted-foreground mt-0.5">Process or paste an email</p>
         </button>
 
-        <button
-          onClick={() => setView('promises')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
-        >
-          <p className="font-semibold">Promises</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Commitments you've made</p>
-        </button>
+        {workPromises.length > 0 && (() => {
+          const dueToday = workPromises.filter(p => p.due_date === getToday()).length
+          return (
+            <div className="w-full px-4 py-3 rounded-xl bg-secondary border border-border">
+              <p className="text-xs text-muted-foreground">
+                {workPromises.length} promise{workPromises.length !== 1 ? 's' : ''} active
+                {dueToday > 0 ? ` · ${dueToday} due today` : ''}
+                {' · Manage in Home'}
+              </p>
+            </div>
+          )
+        })()}
 
         <button
           onClick={() => setView('agenda')}
@@ -202,6 +204,11 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
           />
         </div>
       </div>
+
+      <QuickCaptureFAB
+        placeholder="Add a task"
+        onCapture={(title, _, dueDate) => addTask(title, 'work', dueDate)}
+      />
     </div>
   )
 }

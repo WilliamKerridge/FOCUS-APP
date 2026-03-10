@@ -20,6 +20,7 @@ import ReviewScreen from '@/components/review/ReviewScreen'
 import AgendaView from '@/components/calendar/AgendaView'
 import ItemDetailCard from '@/components/calendar/ItemDetailCard'
 import type { AgendaItem } from '@/components/calendar/AgendaView'
+import QuickCaptureFAB from '@/components/capture/QuickCaptureFAB'
 
 interface Props {
   user: User
@@ -36,7 +37,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
   const [redoingKickstart, setRedoingKickstart] = useState(false)
   const [leftTab, setLeftTab] = useState<'tasks' | 'agenda'>('tasks')
   const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null)
-  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, createCompletedTask, updateTask } = useTaskList(user, ['work', 'waiting_for'])
+  const { openTasks, completedTasks, loading: tasksLoading, error: tasksError, markDone, addTask, createCompletedTask, updateTask } = useTaskList(user, ['work', 'waiting_for'])
   const { kickstartDone, endOfDayDone, loading: progressLoading } = useTodayHandoffs(user)
   const { plan, loading: loadingPlan, error: planError, refreshPlan } = useTodayKickstart(user)
   const { items: inboxItems } = useEmailInbox(user)
@@ -127,13 +128,6 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             onItemComplete={createCompletedTask}
             userId={user.id}
             activePromises={allPromises}
-            onPromiseComplete={async (id) => {
-              if (workPromises.some(p => p.id === id)) {
-                await completeWorkPromise(id)
-              } else {
-                await completeHomePromise(id)
-              }
-            }}
           />
         ) : (
           <div className="space-y-4">
@@ -219,6 +213,11 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
         onClose={() => setSelectedItem(null)}
       />
     )}
+
+    <QuickCaptureFAB
+      placeholder="Add a task"
+      onCapture={(title, _, dueDate) => addTask(title, 'work', dueDate)}
+    />
     </div>
   )
 }

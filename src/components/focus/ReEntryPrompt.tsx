@@ -53,7 +53,7 @@ Next action: [specific physical next step — not vague, not 'continue working o
       </button>
 
       {result && (
-        <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
+        <div className="pl-3 border-l-2 border-border">
           <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{result}</pre>
           <button
             onClick={() => setResult(null)}

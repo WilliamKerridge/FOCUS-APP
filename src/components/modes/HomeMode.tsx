@@ -1,5 +1,5 @@
 // src/components/modes/HomeMode.tsx
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import { useTaskList } from '@/hooks/useTaskList'
@@ -7,6 +7,7 @@ import { usePromises } from '@/hooks/usePromises'
 import { getToday, getDefaultDue } from '@/lib/utils'
 import WeeklyStrip from '@/components/calendar/WeeklyStrip'
 import ItemDetailCard from '@/components/calendar/ItemDetailCard'
+import QuickCaptureFAB from '@/components/capture/QuickCaptureFAB'
 
 interface Props {
   user: User
@@ -25,20 +26,6 @@ type UnifiedItem =
   | { kind: 'promise'; id: string; title: string; madeTo: string | null; dueDate: string }
 
 export default function HomeMode({ user }: Props) {
-  const [title, setTitle] = useState('')
-  const [madeTo, setMadeTo] = useState('')
-  const [dueDate, setDueDate] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-    }
-  }, [])
-
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<UnifiedItem | null>(null)
 
@@ -79,31 +66,6 @@ export default function HomeMode({ user }: Props) {
     [completedTasks]
   )
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    if (!title.trim()) return
-    setSaving(true)
-    setSaveError(null)
-    let err: string | null
-    if (madeTo.trim()) {
-      const effectiveDue = dueDate || getDefaultDue()
-      err = await addPromise(title.trim(), madeTo.trim(), effectiveDue)
-    } else {
-      err = await addTask(title.trim(), 'home', dueDate || null)
-    }
-    setSaving(false)
-    if (err) {
-      setSaveError(err)
-    } else {
-      setTitle('')
-      setMadeTo('')
-      setDueDate('')
-      setSaved(true)
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = setTimeout(() => setSaved(false), 2000)
-    }
-  }
-
   const loading = tasksLoading || promisesLoading
   const loadError = tasksError || promisesError
 
@@ -113,39 +75,6 @@ export default function HomeMode({ user }: Props) {
         <h2 className="text-lg font-bold">Home</h2>
         <p className="text-sm text-muted-foreground mt-1">You're in home mode. Focus on what matters here.</p>
       </div>
-
-      <form onSubmit={handleSave} className="space-y-3 px-4 py-4 rounded-xl bg-secondary border border-border">
-        <input
-          type="text"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          placeholder="What's on your mind?"
-          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-        />
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={madeTo}
-            onChange={e => setMadeTo(e.target.value)}
-            placeholder="To whom? (e.g. Claire)"
-            className="flex-1 px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
-          <input
-            type="date"
-            value={dueDate}
-            onChange={e => setDueDate(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          />
-        </div>
-        {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-        <button
-          type="submit"
-          disabled={saving || !title.trim()}
-          className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
-        >
-          {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save'}
-        </button>
-      </form>
 
       <WeeklyStrip
         itemDates={activeItems.map(i => i.dueDate)}
@@ -198,6 +127,15 @@ export default function HomeMode({ user }: Props) {
         <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-3">Focus session</p>
         <SessionPanel user={user} />
       </div>
+
+      <QuickCaptureFAB
+        showMadeTo
+        placeholder="What's on your mind?"
+        onCapture={async (title, madeTo, dueDate) => {
+          if (madeTo) return addPromise(title, madeTo, dueDate ?? getDefaultDue())
+          return addTask(title, 'home', dueDate)
+        }}
+      />
 
       {selectedItem && (
         <ItemDetailCard

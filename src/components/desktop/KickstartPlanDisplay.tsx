@@ -1,6 +1,7 @@
 // src/components/desktop/KickstartPlanDisplay.tsx
 import { useState } from 'react'
 import type { KickstartContent, UserPromise } from '@/types'
+import { getToday } from '@/lib/utils'
 
 interface Props {
   plan: KickstartContent
@@ -9,11 +10,10 @@ interface Props {
   onRedo?: () => void
   onItemComplete?: (title: string, context: 'work' | 'home') => void
   userId?: string
-  onPromiseComplete?: (id: string) => void
   activePromises?: UserPromise[]
 }
 
-export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete, userId, onPromiseComplete, activePromises }: Props) {
+export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, onRedo, onItemComplete, userId, activePromises }: Props) {
   const storageKey = userId
     ? `kickstart-checked-${userId}-${new Date().toISOString().split('T')[0]}`
     : null
@@ -142,28 +142,17 @@ export default function KickstartPlanDisplay({ plan, activeTask, onSelectTask, o
         </div>
       )}
 
-      {/* Active promises */}
-      {(activePromises?.length ?? 0) > 0 && (
-        <div className="px-4 py-3 rounded-lg bg-secondary border border-border">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Promises</p>
-          <ul className="space-y-1">
-            {activePromises!.map(p => (
-              <li key={p.id} className="text-sm flex gap-2 items-start">
-                <button
-                  onClick={() => onPromiseComplete?.(p.id)}
-                  className="shrink-0 mt-0.5 cursor-pointer w-4 text-left"
-                >
-                  <span className="text-yellow-400">•</span>
-                </button>
-                <span className="flex-1">
-                  {p.title}{p.made_to ? ` — ${p.made_to}` : ''}
-                  <span className="ml-2 text-xs text-muted-foreground">{p.due_date}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Active promises — read-only callout */}
+      {(activePromises?.length ?? 0) > 0 && (() => {
+        const dueToday = activePromises!.filter(p => p.due_date === getToday()).length
+        return (
+          <p className="text-xs text-muted-foreground px-1">
+            {activePromises!.length} promise{activePromises!.length !== 1 ? 's' : ''} active
+            {dueToday > 0 ? ` · ${dueToday} due today` : ''}
+            {' · Manage in Home'}
+          </p>
+        )
+      })()}
 
       {/* Done yesterday */}
       {(plan.completed_yesterday?.length ?? 0) > 0 && (
