@@ -1,6 +1,6 @@
 // src/components/modes/HomeMode.tsx
 import { useState, useMemo } from 'react'
-import { CircleCheck, User } from 'lucide-react'
+import { CircleCheck, User as UserIcon } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import { useTaskList } from '@/hooks/useTaskList'
@@ -83,7 +83,7 @@ export default function HomeMode({ user }: Props) {
           <p className="text-sm text-muted-foreground mt-0.5">{formattedDate}</p>
         </div>
         <div className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0">
-          <User className="w-5 h-5 text-muted-foreground" />
+          <UserIcon className="w-5 h-5 text-muted-foreground" />
         </div>
       </div>
 
