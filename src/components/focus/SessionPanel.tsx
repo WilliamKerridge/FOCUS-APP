@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { SessionType } from '@/types'
 import { useFocusSession } from '@/hooks/useFocusSession'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import SessionCloseModal from '@/components/desktop/SessionCloseModal'
 import { formatTime } from '@/lib/utils'
 
@@ -34,6 +35,8 @@ export default function SessionPanel({ user, initialTask, linkedTaskId, onLinked
     startSession,
     endSession,
   } = useFocusSession(user)
+
+  const { isMobile } = useBreakpoint()
 
   const [topic, setTopic] = useState(initialTask ?? '')
   const [sessionType, setSessionType] = useState<SessionType>('work')
@@ -97,6 +100,73 @@ export default function SessionPanel({ user, initialTask, linkedTaskId, onLinked
 
   if (loading) {
     return <div className="animate-pulse h-64 rounded-xl bg-secondary" />
+  }
+
+  // Mobile immersive full-screen view when session is active
+  if (activeSession && isMobile) {
+    return (
+      <>
+        <div className="fixed inset-0 z-[60] bg-background flex flex-col">
+          {/* Session type chip */}
+          <div className="flex items-center justify-center pt-16 pb-6">
+            <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-semibold tracking-[0.8px] uppercase">
+              {activeSession.type}
+            </span>
+          </div>
+
+          {/* Task name */}
+          <div className="px-8 text-center mb-6">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
+              Focusing on
+            </p>
+            <p className="text-base font-medium leading-snug line-clamp-3">
+              {activeSession.start_context}
+            </p>
+          </div>
+
+          {/* Timer with radial glow */}
+          <div className="relative flex items-center justify-center flex-1">
+            <div className="absolute w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+            <p className="relative font-fraunces text-7xl font-semibold tabular-nums tracking-tight">
+              {formatTime(elapsedSeconds)}
+            </p>
+          </div>
+
+          {/* Session dots */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            {Array.from({ length: MAX_DOTS }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 w-2 rounded-full ${i < todaySessionCount ? 'bg-primary' : 'bg-border'}`}
+              />
+            ))}
+            <span className="text-xs text-muted-foreground ml-1">
+              {todaySessionCount} session{todaySessionCount !== 1 ? 's' : ''} today
+            </span>
+          </div>
+
+          {/* Finish button */}
+          <div className="px-6 pb-12">
+            <button
+              onClick={handleStop}
+              className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base cursor-pointer active:scale-[0.98] transition-transform"
+            >
+              Finish session
+            </button>
+          </div>
+        </div>
+
+        {showCloseModal && (
+          <SessionCloseModal
+            isEarlyExit={isEarlyExit}
+            remainingMins={Math.ceil((plannedSeconds - elapsedSeconds) / 60)}
+            autoTriggered={autoTriggered}
+            onKeepGoing={() => { setShowCloseModal(false); setAutoTriggered(false) }}
+            onClose={handleClose}
+          />
+        )}
+      </>
+    )
   }
 
   return (
@@ -216,15 +286,39 @@ export default function SessionPanel({ user, initialTask, linkedTaskId, onLinked
       )}
 
       {/* Timer */}
-      <div className="px-4 py-6 rounded-xl bg-secondary border border-border text-center space-y-4">
-        <p className="text-4xl font-bold tabular-nums tracking-tight">
+      <div className={`relative overflow-hidden px-4 py-6 rounded-2xl text-center space-y-4 ${
+        activeSession
+          ? 'bg-secondary border border-primary/20 shadow-[0_8px_24px_rgba(63,169,245,0.08)]'
+          : 'bg-secondary border border-border'
+      }`}>
+        {/* Radial glow — desktop active only */}
+        {activeSession && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-48 h-48 rounded-full bg-primary/10 blur-3xl" />
+          </div>
+        )}
+
+        {/* Session type chip — desktop active only */}
+        {activeSession && (
+          <div className="relative flex justify-center">
+            <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-semibold tracking-[0.8px] uppercase">
+              {activeSession.type}
+            </span>
+          </div>
+        )}
+
+        <p className={`relative tabular-nums tracking-tight ${
+          activeSession
+            ? 'font-fraunces text-5xl font-semibold'
+            : 'text-4xl font-bold'
+        }`}>
           {formatTime(elapsedSeconds)}
         </p>
 
         {activeSession ? (
           <button
             onClick={handleStop}
-            className="w-full py-3 rounded-lg border border-border text-sm font-medium cursor-pointer hover:text-foreground text-muted-foreground motion-safe:active:scale-95 motion-safe:transition-transform"
+            className="relative w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold cursor-pointer active:scale-[0.98] transition-transform"
           >
             Finish session
           </button>
@@ -240,7 +334,7 @@ export default function SessionPanel({ user, initialTask, linkedTaskId, onLinked
         )}
 
         {/* Session dots */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="relative flex items-center justify-center gap-2">
           {Array.from({ length: MAX_DOTS }).map((_, i) => (
             <div
               key={i}
