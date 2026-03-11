@@ -46,6 +46,7 @@ export default function TaskList({
             <TaskRow
               key={task.id}
               task={task}
+              accent="primary"
               selected={task.id === selectedTaskId}
               onDone={() => onDone(task.id)}
               onSelect={onSelectForFocus ? () => onSelectForFocus(task.id, task.title) : undefined}
@@ -60,6 +61,7 @@ export default function TaskList({
                 <TaskRow
                   key={task.id}
                   task={task}
+                  accent="amber"
                   selected={task.id === selectedTaskId}
                   onDone={() => onDone(task.id)}
                   onSelect={onSelectForFocus ? () => onSelectForFocus(task.id, task.title) : undefined}
@@ -90,28 +92,30 @@ export default function TaskList({
 function TaskRow({
   task,
   selected,
+  accent = 'primary',
   onDone,
   onSelect,
 }: {
   task: Task
   selected: boolean
+  accent?: 'primary' | 'amber'
   onDone: () => void
   onSelect?: () => void
 }) {
   return (
     <div
-      className={`flex items-start gap-3 rounded px-1 py-0.5 -mx-1 transition-colors ${
-        selected ? 'bg-primary/15' : onSelect ? 'hover:bg-secondary cursor-pointer' : ''
+      className={`relative flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary overflow-hidden transition-colors ${
+        selected ? 'ring-1 ring-primary/40' : onSelect ? 'cursor-pointer hover:bg-secondary/70' : ''
       }`}
       onClick={onSelect}
     >
+      {/* Left accent bar */}
+      <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accent === 'amber' ? 'bg-amber-400' : 'bg-primary'}`} />
       <button
         onClick={e => { e.stopPropagation(); onDone() }}
-        className="mt-0.5 h-4 w-4 shrink-0 rounded border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors"
+        className="shrink-0 w-5 h-5 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors"
         aria-label={`Mark "${task.title}" as done`}
-      >
-        <span className="text-xs leading-none opacity-0 hover:opacity-100">✓</span>
-      </button>
+      />
       <span className="text-sm leading-snug flex-1">
         {task.title}
         {task.due_date && (
