@@ -1,5 +1,6 @@
 // src/components/modes/HomeMode.tsx
 import { useState, useMemo } from 'react'
+import { CircleCheck, User } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import { useTaskList } from '@/hooks/useTaskList'
@@ -69,11 +70,21 @@ export default function HomeMode({ user }: Props) {
   const loading = tasksLoading || promisesLoading
   const loadError = tasksError || promisesError
 
+  const formattedDate = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-bold">Home</h2>
-        <p className="text-sm text-muted-foreground mt-1">You're in home mode. Focus on what matters here.</p>
+      {/* Mode header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-fraunces text-2xl font-semibold leading-tight">Home</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{formattedDate}</p>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0">
+          <User className="w-5 h-5 text-muted-foreground" />
+        </div>
       </div>
 
       <WeeklyStrip
@@ -86,22 +97,34 @@ export default function HomeMode({ user }: Props) {
       {loadError && <p className="text-sm text-destructive">{loadError}</p>}
 
       {!loading && visibleItems.length === 0 && (
-        <p className="text-sm text-muted-foreground px-1">{selectedDay ? 'Nothing due this day.' : 'Nothing on your list.'}</p>
+        <p className="text-sm text-muted-foreground px-1">
+          {selectedDay ? 'Nothing due this day.' : 'Nothing on your list.'}
+        </p>
       )}
 
+      {/* Active items with left accent bars */}
       <div className="space-y-2">
         {visibleItems.map(item => {
           const label = dueDateLabel(item.dueDate)
+          const isPromise = item.kind === 'promise'
           return (
-            <div key={`${item.kind}-${item.id}`} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-secondary border border-border cursor-pointer hover:bg-secondary/70" onClick={() => setSelectedItem(item)}>
+            <div
+              key={`${item.kind}-${item.id}`}
+              className="relative flex items-start gap-3 px-4 py-3 rounded-xl bg-secondary overflow-hidden cursor-pointer hover:bg-secondary/70"
+              onClick={() => setSelectedItem(item)}
+            >
+              {/* Left accent bar */}
+              <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${isPromise ? 'bg-amber-400' : 'bg-primary'}`} />
               <button
                 aria-label={`Complete ${item.title}`}
-                onClick={e => { e.stopPropagation(); item.kind === 'task' ? markDone(item.id) : completePromise(item.id) }}
+                onClick={e => { e.stopPropagation(); isPromise ? completePromise(item.id) : markDone(item.id) }}
                 className="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-border hover:border-primary cursor-pointer transition-colors"
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{item.title}</p>
-                {item.madeTo && <p className="text-xs text-muted-foreground">to {item.madeTo}</p>}
+                {isPromise && item.madeTo && (
+                  <p className="text-xs text-amber-400/80 mt-0.5">Promise to {item.madeTo}</p>
+                )}
               </div>
               {label && (
                 <span className={`text-xs font-medium shrink-0 ${label.color}`}>{label.text}</span>
@@ -111,13 +134,16 @@ export default function HomeMode({ user }: Props) {
         })}
       </div>
 
+      {/* Done today */}
       {doneItems.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium px-1">Done today</p>
+          <p className="text-xs text-green-400 uppercase tracking-wider font-semibold px-1">
+            Done today
+          </p>
           {doneItems.map(item => (
-            <div key={`done-${item.id}`} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-secondary border border-border opacity-50">
-              <div className="shrink-0 mt-0.5 w-5 h-5 rounded-full border-2 border-border bg-border" />
-              <p className="text-sm line-through text-muted-foreground">{item.title}</p>
+            <div key={`done-${item.id}`} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary/50">
+              <CircleCheck className="w-5 h-5 text-green-400 shrink-0" />
+              <p className="text-sm text-muted-foreground">{item.title}</p>
             </div>
           ))}
         </div>
