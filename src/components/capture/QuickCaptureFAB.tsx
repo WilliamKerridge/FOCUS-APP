@@ -74,7 +74,7 @@ export default function QuickCaptureFAB({ onCapture, showMadeTo, placeholder = '
 
       {/* Sheet */}
       {open && (
-        <div className="fixed bottom-[180px] md:bottom-20 right-4 z-50 w-80 rounded-2xl bg-background border border-border shadow-xl p-4 space-y-3">
+        <div className="fixed bottom-[200px] md:bottom-20 right-4 z-[70] w-80 rounded-2xl bg-background border border-border shadow-xl p-4 space-y-3">
           {saved ? (
             <p className="text-sm text-center text-muted-foreground py-2">Saved ✓</p>
           ) : (
@@ -129,7 +129,7 @@ export default function QuickCaptureFAB({ onCapture, showMadeTo, placeholder = '
       {/* FAB button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="fixed bottom-[100px] md:bottom-6 right-4 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl font-light cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+        className="fixed bottom-[120px] md:bottom-6 right-4 z-[70] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl font-light cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
         aria-label="Quick capture"
       >
         {open ? '×' : '+'}
