@@ -31,6 +31,9 @@ export default {
           foreground: 'hsl(var(--accent-foreground))',
         },
       },
+      fontFamily: {
+        fraunces: ['Fraunces', 'Georgia', 'serif'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
