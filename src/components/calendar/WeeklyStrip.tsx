@@ -32,11 +32,11 @@ export default function WeeklyStrip({ itemDates, selectedDay, onSelectDay }: Pro
           <button
             key={iso}
             onClick={() => onSelectDay(isSelected ? null : iso)}
-            className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors
-              ${isSelected ? 'bg-primary text-primary-foreground' : isToday ? 'bg-secondary border-2 border-primary' : 'bg-secondary hover:bg-secondary/70'}`}
+            className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors
+              ${isSelected || isToday ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/70'}`}
           >
             <span className="text-[10px] uppercase tracking-wide opacity-70">{label}</span>
-            <span className="text-sm font-bold">{dateNum}</span>
+            <span className="text-base font-bold leading-none">{dateNum}</span>
             {hasDot && <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-primary-foreground' : 'bg-primary'}`} />}
           </button>
         )
