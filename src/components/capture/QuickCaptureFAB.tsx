@@ -5,9 +5,10 @@ interface Props {
   onCapture: (title: string, madeTo: string | null, dueDate: string | null) => Promise<string | null>
   showMadeTo?: boolean
   placeholder?: string
+  inline?: boolean
 }
 
-export default function QuickCaptureFAB({ onCapture, showMadeTo, placeholder = 'Add a task' }: Props) {
+export default function QuickCaptureFAB({ onCapture, showMadeTo, placeholder = 'Add a task', inline }: Props) {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [madeTo, setMadeTo] = useState('')
@@ -126,14 +127,24 @@ export default function QuickCaptureFAB({ onCapture, showMadeTo, placeholder = '
         </div>
       )}
 
-      {/* FAB button */}
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="fixed bottom-[120px] md:bottom-6 right-4 z-[70] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl font-light cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
-        aria-label="Quick capture"
-      >
-        {open ? '×' : '+'}
-      </button>
+      {/* Trigger button */}
+      {inline ? (
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center text-xl font-light text-muted-foreground hover:text-foreground hover:border-primary cursor-pointer transition-colors shrink-0"
+          aria-label="Quick capture"
+        >
+          {open ? '×' : '+'}
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="fixed bottom-[120px] md:bottom-6 right-4 z-[70] w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl font-light cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
+          aria-label="Quick capture"
+        >
+          {open ? '×' : '+'}
+        </button>
+      )}
     </>
   )
 }

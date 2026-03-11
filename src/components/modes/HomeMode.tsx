@@ -1,6 +1,6 @@
 // src/components/modes/HomeMode.tsx
 import { useState, useMemo } from 'react'
-import { CircleCheck, User as UserIcon } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import SessionPanel from '@/components/focus/SessionPanel'
 import { useTaskList } from '@/hooks/useTaskList'
@@ -82,9 +82,15 @@ export default function HomeMode({ user }: Props) {
           <h2 className="font-fraunces text-2xl font-semibold leading-tight">Home</h2>
           <p className="text-sm text-muted-foreground mt-0.5">{formattedDate}</p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0">
-          <UserIcon className="w-5 h-5 text-muted-foreground" />
-        </div>
+        <QuickCaptureFAB
+          inline
+          showMadeTo
+          placeholder="What's on your mind?"
+          onCapture={async (title, madeTo, dueDate) => {
+            if (madeTo) return addPromise(title, madeTo, dueDate ?? getDefaultDue())
+            return addTask(title, 'home', dueDate)
+          }}
+        />
       </div>
 
       <WeeklyStrip
@@ -154,14 +160,6 @@ export default function HomeMode({ user }: Props) {
         <SessionPanel user={user} />
       </div>
 
-      <QuickCaptureFAB
-        showMadeTo
-        placeholder="What's on your mind?"
-        onCapture={async (title, madeTo, dueDate) => {
-          if (madeTo) return addPromise(title, madeTo, dueDate ?? getDefaultDue())
-          return addTask(title, 'home', dueDate)
-        }}
-      />
 
       {selectedItem && (
         <ItemDetailCard

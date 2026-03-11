@@ -129,7 +129,14 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
             {new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <StreakCounter user={user} />
+        <div className="flex items-center gap-2">
+          <QuickCaptureFAB
+            inline
+            placeholder="Add a task"
+            onCapture={(title, _, dueDate) => addTask(title, 'work', dueDate)}
+          />
+          <StreakCounter user={user} />
+        </div>
       </div>
 
       {/* TODAY'S FOCUS hero card */}
@@ -209,10 +216,6 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
         </div>
       </div>
 
-      <QuickCaptureFAB
-        placeholder="Add a task"
-        onCapture={(title, _, dueDate) => addTask(title, 'work', dueDate)}
-      />
     </div>
   )
 }
