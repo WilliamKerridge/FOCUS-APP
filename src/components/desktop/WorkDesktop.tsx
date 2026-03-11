@@ -91,9 +91,57 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
     <div className="grid grid-cols-2 gap-8">
       {/* Left column — planning */}
       <div className="space-y-4">
-        <div className="flex gap-1 bg-secondary rounded-lg p-1">
-          <button onClick={() => setLeftTab('tasks')} className={`flex-1 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${leftTab === 'tasks' ? 'bg-background shadow' : ''}`}>Tasks</button>
-          <button onClick={() => setLeftTab('agenda')} className={`flex-1 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${leftTab === 'agenda' ? 'bg-background shadow' : ''}`}>Agenda</button>
+        {/* Left column header */}
+        <div className="mb-1">
+          <p className="text-xs text-muted-foreground">
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          <h2 className="font-fraunces text-2xl font-semibold leading-tight">Today's Plan</h2>
+        </div>
+
+        {/* Main focus hero card */}
+        {plan?.main_focus && !redoingKickstart && (
+          <div className="p-5 rounded-2xl bg-secondary border border-primary/20 shadow-[0_8px_24px_rgba(63,169,245,0.08)]">
+            <p className="text-[11px] font-semibold text-primary tracking-[0.8px] uppercase mb-2">MAIN FOCUS</p>
+            <p className="font-fraunces text-xl font-semibold leading-snug mb-3">{plan.main_focus}</p>
+            <button
+              onClick={() => setActiveTask(plan.main_focus)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] bg-primary text-primary-foreground text-sm font-semibold cursor-pointer"
+            >
+              Start Session
+            </button>
+          </div>
+        )}
+        {(!plan?.main_focus || redoingKickstart) && !loadingPlan && (
+          <button
+            onClick={() => setRedoingKickstart(true)}
+            className="w-full text-left p-5 rounded-2xl bg-secondary border border-primary/20 shadow-[0_8px_24px_rgba(63,169,245,0.08)] cursor-pointer"
+          >
+            <p className="text-[11px] font-semibold text-primary tracking-[0.8px] uppercase mb-2">TODAY'S FOCUS</p>
+            <p className="font-fraunces text-xl font-semibold leading-snug mb-1">Morning Kickstart</p>
+            <p className="text-sm text-muted-foreground mb-3">Brain dump → sorted plan</p>
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[10px] bg-primary text-primary-foreground text-sm font-semibold">Begin</span>
+          </button>
+        )}
+
+        {/* Segmented Tasks | Agenda control */}
+        <div className="flex h-10 rounded-[10px] bg-secondary p-1">
+          <button
+            onClick={() => setLeftTab('tasks')}
+            className={`flex-1 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+              leftTab === 'tasks' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Tasks
+          </button>
+          <button
+            onClick={() => setLeftTab('agenda')}
+            className={`flex-1 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+              leftTab === 'agenda' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Agenda
+          </button>
         </div>
 
         {leftTab === 'agenda' && (
@@ -117,7 +165,6 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
           <div className="space-y-3 animate-pulse">
             <div className="h-24 rounded-lg bg-secondary" />
             <div className="h-16 rounded-lg bg-secondary" />
-            <div className="h-16 rounded-lg bg-secondary" />
           </div>
         ) : plan?.main_focus && !redoingKickstart ? (
           <KickstartPlanDisplay
@@ -129,9 +176,9 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
             userId={user.id}
             activePromises={allPromises}
           />
-        ) : (
+        ) : redoingKickstart ? (
           <div className="space-y-4">
-            {plan && !plan.main_focus && !redoingKickstart && (
+            {plan && !plan.main_focus && (
               <p className="text-sm text-muted-foreground">Your kickstart didn't save properly — redo it below.</p>
             )}
             <MorningKickstart
@@ -139,7 +186,7 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
               onComplete={() => { setRedoingKickstart(false); refreshPlan() }}
             />
           </div>
-        )}
+        ) : null}
 
         <TaskList
           openTasks={openTasks}
@@ -151,36 +198,25 @@ export default function WorkDesktop({ user, onSwitchToTransition }: Props) {
           onSelectForFocus={(id, title) => { setActiveTaskId(id); setActiveTask(title) }}
         />
 
-        {/* Bottom actions */}
-        <div className="pt-2 space-y-2">
-          {!progressLoading && (
-            <DailyProgress kickstartDone={kickstartDone} endOfDayDone={endOfDayDone} />
-          )}
-          <ReEntryPrompt user={user} />
-          <button
-            onClick={() => setView('handoff')}
-            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform mt-3"
-          >
-            End of Day
-          </button>
-          <button
-            onClick={() => setView('review')}
-            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform"
-          >
-            Weekly Review
-          </button>
-          <button
-            onClick={() => setShowEmailDrop(true)}
-            className="w-full py-3 rounded-lg bg-secondary border border-border text-sm font-medium cursor-pointer motion-safe:active:scale-95 motion-safe:transition-transform flex items-center justify-center gap-2 relative"
-          >
-            Process an email
-            {inboxCount > 0 && (
-              <span className="bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                {inboxCount}
-              </span>
-            )}
-          </button>
+        {/* Compact action strip */}
+        <div className="flex gap-2 pt-2">
+          {[
+            { label: 'Kickstart',  onClick: () => setRedoingKickstart(true) },
+            { label: 'End of Day', onClick: () => setView('handoff') },
+            { label: 'Review',     onClick: () => setView('review') },
+            { label: `Email${inboxCount > 0 ? ` (${inboxCount})` : ''}`, onClick: () => setShowEmailDrop(true) },
+          ].map(({ label, onClick }) => (
+            <button
+              key={label}
+              onClick={onClick}
+              className="flex-1 py-2 rounded-lg bg-secondary border border-border text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            >
+              {label}
+            </button>
+          ))}
         </div>
+        {!progressLoading && <DailyProgress kickstartDone={kickstartDone} endOfDayDone={endOfDayDone} />}
+        <ReEntryPrompt user={user} />
         </>}
       </div>
 
