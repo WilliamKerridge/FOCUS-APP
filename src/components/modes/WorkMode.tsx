@@ -15,7 +15,7 @@ import AgendaView from '@/components/calendar/AgendaView'
 import ItemDetailCard from '@/components/calendar/ItemDetailCard'
 import type { AgendaItem } from '@/components/calendar/AgendaView'
 import { usePromises } from '@/hooks/usePromises'
-import { getToday } from '@/lib/utils'
+
 import QuickCaptureFAB from '@/components/capture/QuickCaptureFAB'
 
 type WorkView = 'home' | 'kickstart' | 'handoff' | 'review' | 'email' | 'agenda'
@@ -116,70 +116,74 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {abandonedSession && (
         <AbandonedSessionBanner session={abandonedSession} onClose={closeAbandoned} />
       )}
 
+      {/* Mode header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Work</h2>
+        <div>
+          <h2 className="font-fraunces text-2xl font-semibold leading-tight">Work</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
         <StreakCounter user={user} />
       </div>
 
-      <div className="grid gap-3">
-        <button
-          onClick={() => setView('kickstart')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
-        >
-          <p className="font-semibold">Morning Kickstart</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Brain dump → sorted plan</p>
-        </button>
+      {/* TODAY'S FOCUS hero card */}
+      <button
+        onClick={() => setView('kickstart')}
+        className="w-full text-left p-5 rounded-2xl bg-secondary border border-primary/20 shadow-[0_8px_24px_rgba(63,169,245,0.08)] cursor-pointer active:scale-[0.98] transition-transform"
+      >
+        <p className="text-[11px] font-semibold text-primary tracking-[0.8px] uppercase mb-2">
+          TODAY'S FOCUS
+        </p>
+        <p className="font-fraunces text-[22px] font-semibold leading-tight mb-1">
+          Morning Kickstart
+        </p>
+        <p className="text-sm text-muted-foreground mb-4">
+          Brain dump → sorted plan
+        </p>
+        <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-[10px] bg-primary text-primary-foreground text-sm font-semibold">
+          Begin
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </span>
+      </button>
 
-        <button
-          onClick={() => setView('handoff')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
-        >
-          <p className="font-semibold">End of Day</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Park it, set tomorrow's start</p>
-        </button>
+      {/* 2×2 quick action grid */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {([
+          { label: 'End of Day', icon: 'sunset',    view: 'handoff' },
+          { label: 'Agenda',     icon: 'calendar',  view: 'agenda'  },
+          { label: 'Review',     icon: 'trending',  view: 'review'  },
+          { label: 'Email',      icon: 'mail',      view: 'email'   },
+        ] as const).map(({ label, icon, view: v }) => (
+          <button
+            key={v}
+            onClick={() => setView(v as WorkView)}
+            className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-xl bg-secondary border border-border cursor-pointer hover:bg-secondary/70 active:scale-[0.97] transition-transform"
+          >
+            <QuickActionIcon name={icon} />
+            <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          </button>
+        ))}
+      </div>
 
-        <button
-          onClick={() => setView('review')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
-        >
-          <p className="font-semibold">Weekly Review</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Tasks completed this week</p>
-        </button>
-
-        <button
-          onClick={() => setView('email')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
-        >
-          <p className="font-semibold">Email</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Process or paste an email</p>
-        </button>
-
-        {workPromises.length > 0 && (() => {
-          const dueToday = workPromises.filter(p => p.due_date === getToday()).length
-          return (
-            <div className="w-full px-4 py-3 rounded-xl bg-secondary border border-border">
-              <p className="text-xs text-muted-foreground">
-                {workPromises.length} promise{workPromises.length !== 1 ? 's' : ''} active
-                {dueToday > 0 ? ` · ${dueToday} due today` : ''}
-                {' · Manage in Home'}
-              </p>
-            </div>
-          )
-        })()}
-
+      {/* Promises callout pill */}
+      {workPromises.length > 0 && (
         <button
           onClick={() => setView('agenda')}
-          className="w-full px-4 py-5 rounded-xl bg-secondary border border-border text-left cursor-pointer motion-safe:active:scale-[0.98] motion-safe:transition-transform"
+          className="w-full flex items-center gap-2 px-4 py-2.5 rounded-full border border-amber-400/30 bg-amber-400/10 cursor-pointer"
         >
-          <p className="font-semibold">Agenda</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Tasks & promises by date</p>
+          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+          <span className="text-sm font-semibold text-amber-400">
+            {workPromises.length} active promise{workPromises.length !== 1 ? 's' : ''}
+          </span>
+          <span className="ml-auto text-xs font-medium text-amber-400">View all →</span>
         </button>
-      </div>
+      )}
 
       <TaskList
         openTasks={openTasks}
@@ -211,4 +215,13 @@ export default function WorkMode({ user, onSwitchToTransition }: Props) {
       />
     </div>
   )
+}
+
+function QuickActionIcon({ name }: { name: string }) {
+  const cls = "h-[18px] w-[18px] text-muted-foreground"
+  if (name === 'sunset')   return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}><path d="M12 10V2"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+  if (name === 'calendar')  return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+  if (name === 'trending')  return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+  if (name === 'mail')      return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+  return null
 }
