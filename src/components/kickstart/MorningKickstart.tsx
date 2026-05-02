@@ -89,6 +89,22 @@ export default function MorningKickstart({ user, onBack, onComplete, onSelectTas
       })
   }, [user.id])
 
+  // Push kickstart plan to CRM Command Centre after save
+  useEffect(() => {
+    if (!result || !result.main_focus) return
+    const today = new Date().toISOString().split('T')[0]
+    fetch('http://localhost:8000/command-centre/focus-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: today,
+        main_focus: result.main_focus,
+        must_today: result.must_today ?? [],
+        if_time: result.if_time ?? [],
+      }),
+    }).catch(() => {})  // CRM offline — silent fail
+  }, [result])
+
   async function handleStart() {
     setLoading(true)
     setError(null)
