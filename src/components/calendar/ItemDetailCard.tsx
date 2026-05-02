@@ -44,8 +44,8 @@ export default function ItemDetailCard({ item, onSave, onComplete, onClose }: Pr
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border rounded-t-2xl p-6 pb-28 space-y-4 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md md:rounded-2xl md:border md:pb-6">
+      <div className="fixed inset-0 bg-black/40 z-[60]" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 z-[70] bg-background border-t border-border rounded-t-2xl p-6 pb-28 space-y-4 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md md:rounded-2xl md:border md:pb-6">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">Edit item</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground cursor-pointer text-lg">✕</button>
