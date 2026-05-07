@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Settings } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { checkHandoffExists } from '@/hooks/useHandoff'
@@ -113,12 +114,13 @@ export default function App() {
 
     const header = (
       <div className="flex items-center justify-between py-4">
-        <h1 className="text-lg font-bold tracking-wider">FOCUS</h1>
+        <h1 className="font-fraunces text-xl font-semibold tracking-wide">FOCUS</h1>
         <button
           onClick={() => setShowSettings(true)}
-          className="text-xs text-muted-foreground hover:text-foreground min-h-[44px] flex items-center cursor-pointer"
+          aria-label="Settings"
+          className="text-muted-foreground hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer transition-colors"
         >
-          Settings
+          <Settings className="h-[18px] w-[18px]" />
         </button>
       </div>
     )
