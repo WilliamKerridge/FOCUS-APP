@@ -21,8 +21,11 @@ export default function SessionCloseModal({ isEarlyExit, remainingMins, onKeepGo
   }
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="w-full max-w-sm bg-secondary border border-border rounded-xl p-6 space-y-4">
+    <div
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="w-full max-w-sm bg-secondary border border-border rounded-xl p-6 space-y-4 max-h-[85dvh] overflow-y-auto">
         {showEarlyExitWarning && (
           <p className="text-sm text-muted-foreground">
             {remainingMins} minute{remainingMins !== 1 ? 's' : ''} remaining.
